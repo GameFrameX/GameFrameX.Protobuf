@@ -2,6 +2,17 @@ syntax = "proto3";
 package Mail;
 option module = 500;
 
+// 邮件业务错误码（6 位 = 模块ID 500 + 3 位编号）。客户端协议 ErrorCode 以 int 透传：发生错误时赋具体码，成功不赋值（框架默认 0）。
+enum MailErrorCode
+{
+  MailNotFound = 500001; // 邮件不存在（或已被删除）
+  MailAlreadyDeleted = 500002; // 邮件已处于删除终态
+  UnclaimedAttachment = 500003; // 存在未领取附件，禁止删除
+  AttachmentNotFound = 500004; // 邮件附件槽位不存在
+  AttachmentAlreadyClaimed = 500005; // 附件已领取（幂等命中）
+  UnclaimableAttachment = 500006; // 附件不可领取（撤回 / 过期已作废）
+}
+
 // 邮件附件视图（含领取状态）。用于邮件列表与读信响应
 message MailAttachmentInfo
 {
