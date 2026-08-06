@@ -57,6 +57,10 @@ Proto 定義透過 `Tools/ProtoExport` 工具（.NET 10）程式碼生成到多�
 | TypeScript | `Proto2TsExport.sh` / `.bat` |
 | TypeScript (LayaBox) | `Proto2TsExport_LayaBox.sh` |
 
+## 依賴
+
+本倉庫依賴 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)，它提供了所有匯出腳本使用的 `ProtoExport` 程式碼生成器。執行任何匯出前，請先從該倉庫建置 `Tools/ProtoExport` 專案。
+
 ## 快速開始
 
 1. 確保已建置 `Tools/ProtoExport` 專案（需要 .NET 10 SDK）。

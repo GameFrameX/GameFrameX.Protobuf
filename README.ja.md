@@ -57,6 +57,10 @@ Proto 定義は `Tools/ProtoExport` ツール（.NET 10）により複数のタ�
 | TypeScript | `Proto2TsExport.sh` / `.bat` |
 | TypeScript (LayaBox) | `Proto2TsExport_LayaBox.sh` |
 
+## 依存関係
+
+このリポジトリは [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) に依存します。GameFrameX.Tools は、すべてのエクスポートスクリプトが使用する `ProtoExport` コードジェネレータを提供します。エクスポートを実行する前に、当該リポジトリから `Tools/ProtoExport` プロジェクトをビルドしてください。
+
 ## クイックスタート
 
 1. `Tools/ProtoExport` プロジェクトがビルド済みであることを確認してください（.NET 10 SDK が必要）。

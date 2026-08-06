@@ -57,6 +57,10 @@ Proto definitions are code-generated to multiple target languages via the `Tools
 | TypeScript | `Proto2TsExport.sh` / `.bat` |
 | TypeScript (LayaBox) | `Proto2TsExport_LayaBox.sh` |
 
+## Dependencies
+
+This repository depends on [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools), which provides the `ProtoExport` code generator used by all export scripts. Build the `Tools/ProtoExport` project from that repository before running any export.
+
 ## Quick Start
 
 1. Ensure the `Tools/ProtoExport` project is built (requires .NET 10 SDK).
