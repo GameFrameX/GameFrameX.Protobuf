@@ -5,7 +5,7 @@
 # GameFrameX.Protobuf
 
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
-[![License](https://img.shields.io/badge/license-MIT+Apache%202.0-orange.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
 
 **인디 게임 개발자를 위한 올인원 솔루션 · 인디 개발자의 꿈을 실현**
@@ -303,4 +303,4 @@ Proto 정의는 `Tools/ProtoExport` 도구(.NET 10)를 통해 여러 대상 언�
 
 ## 라이선스
 
-이 프로젝트는 [MIT 라이선스](LICENSE.md) + Apache 2.0 이중 라이선스로 제공됩니다.
+이 프로젝트는 [Apache 2.0 라이선스](LICENSE.md)로 제공됩니다.

@@ -5,7 +5,7 @@
 # GameFrameX.Protobuf
 
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
-[![License](https://img.shields.io/badge/license-MIT+Apache%202.0-orange.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
 
 **インディゲーム開発者向けオールインワンソリューション · インディ開発者の夢を支援**
@@ -303,4 +303,4 @@ Proto 定義は `Tools/ProtoExport` ツール（.NET 10）により複数のタ�
 
 ## ライセンス
 
-このプロジェクトは [MIT License](LICENSE.md) + Apache 2.0 のデュアルライセンスです。
+このプロジェクトは [Apache License 2.0](LICENSE.md) のもとで提供されます。

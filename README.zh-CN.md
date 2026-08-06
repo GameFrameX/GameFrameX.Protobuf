@@ -5,7 +5,7 @@
 # GameFrameX.Protobuf
 
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
-[![License](https://img.shields.io/badge/license-MIT+Apache%202.0-orange.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
 
 **独立游戏前后端一体化解决方案 · 独立游戏开发者的圆梦大使**
@@ -303,4 +303,4 @@ Proto 定义通过 `Tools/ProtoExport` 工具（.NET 10）代码生成到多种�
 
 ## 开源协议
 
-本项目采用 [MIT 协议](LICENSE.md) + Apache 2.0 双协议授权。
+本项目采用 [Apache 2.0 协议](LICENSE.md) 授权。

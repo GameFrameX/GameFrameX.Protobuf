@@ -5,7 +5,7 @@
 # GameFrameX.Protobuf
 
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
-[![License](https://img.shields.io/badge/license-MIT+Apache%202.0-orange.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
 
 **All-in-One Solution for Indie Game Development · Empowering Indie Developers' Dreams**
@@ -303,4 +303,4 @@ Each script switches into the `Tools/ProtoExport` output directory and invokes `
 
 ## License
 
-This project is licensed under [MIT License](LICENSE.md) + Apache 2.0.
+This project is licensed under the [Apache License 2.0](LICENSE.md).
