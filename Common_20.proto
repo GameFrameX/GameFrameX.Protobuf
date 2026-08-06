@@ -1,40 +1,12 @@
 syntax = "proto3";
 package Common;
 option module = 20;
+
 // 返回码
 enum ResultCode
 {
-  Success = 0; //成功
-  Failed = 1; //失败
-}
-
-enum PhoneType
-{
-  Mobile = 0; // 手机
-  Home = 1;
-  Work = 2; // 工作号码
-}
-
-
-message PhoneNumber
-{
-  string Number = 1;
-  PhoneType Type = 2;
-}
-
-message Person
-{
-  string Name = 1;
-  int32 Id = 2;  // Unique ID number for this person.
-  string Email = 3;
-  repeated PhoneNumber Phones = 4;
-}
-
-
-// Our address book file is just one of these.
-message AddressBook
-{
-  repeated Person People = 1;
+  Success = 0; // 成功
+  Failed = 1; // 失败
 }
 
 // 操作错误代码（客户端与服务器之间的业务错误码）
@@ -59,4 +31,3 @@ enum OperationStatusCode
   InvalidReward = 16; // 奖励参数非法
   PartialSuccess = 17; // 部分成功（多项发放中仅部分成功）
 }
-
