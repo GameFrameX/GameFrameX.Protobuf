@@ -7,12 +7,13 @@
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
+[![CI](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml/badge.svg)](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml)
 
 **インディゲーム開発者向けオールインワンソリューション · インディ開発者の夢を支援**
 
 <br />
 
-[ドキュメント](https://gameframex.doc.alianblank.com) · [クイックスタート](#クイックスタート) · QQグループ: 467608841 / 233840761
+[ドキュメント](https://gameframex.doc.alianblank.com) · [クイックスタート](#クイックスタート) · [多言語リリース](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) · QQグループ: 467608841 / 233840761
 
 <br />
 
@@ -24,7 +25,13 @@
 
 GameFrameX.Protobuf は、GameFrameX フレームワークの統一ネットワークプロトコル定義リポジトリです。Protocol Buffers 3（`proto3`）を採用し、メッセージとエラーコードの定義をビジネスモジュールごとに整理します。各 `.proto` ファイルは数値のモジュール ID（ファイル名の接尾辞）で識別され、クライアントとサーバー間のメッセージルーティングおよびエラーコード生成に使用されます。
 
-完全なドキュメントは [GameFrameX ドキュメントサイト](https://gameframex.doc.alianblank.com/protobuf/require) で公開されています。本 README はリポジトリの構成とエクスポートのエントリポイントに焦点を当てます。
+コード生成は [GameFrameX.Tools `ProtoExport`](https://github.com/GameFrameX/GameFrameX.Tools) ツールが駆動します。自分に合ったワークフローを選んでください:
+
+- **CI（セットアップ不要）** —— 各 `push` で全言語を自動エクスポートし、ローリングの [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) に公開します。ダウンロードするだけ。
+- **Docker** —— `docker run gameframex/gameframex-tools:latest ...`、ツールチェーンのインストール不要。
+- **ローカルスクリプト** —— `Tools/ProtoExport`（.NET 10）を一度ビルドし、`Proto2*Export.sh/.bat` スクリプトを実行。
+
+完全なドキュメントは [GameFrameX ドキュメントサイト](https://gameframex.doc.alianblank.com/protobuf/require) で公開されています。
 
 ## プロトコルモジュール
 
@@ -44,7 +51,7 @@ GameFrameX.Protobuf は、GameFrameX フレームワークの統一ネットワ�
 
 ## プロトコル規約
 
-protobuf 初心者ですか？この節はステップ・バイ・ステップのチュートリアルです。上から順に読めば、`.proto` ファイルを書いたことがなくても、新しいプロトコルモジュールを追加できるようになります。各ステップには平易な説明、最小のサンプル、そしてその背後にあるルールが揃っています。
+protobuf 初心者ですか？この節はステップ・バイ・ステップのチュートリアルです。上から順に読めば、`.proto` ファイルを書いたことがなくても、新しいプロトコルモジュールを追加できるようになります。各ステップには平易な説明、最小のサンプル、そしてその背後にあるルールが揃っています。厳格なツール強制ルールの一覧は、下記の[プロトコル要件](#プロトコル要件)を参照してください。
 
 ### はじめる前に —— 3 つの平易な概念
 
@@ -249,47 +256,225 @@ message NotifyQuestChanged {
 }
 ```
 
-### 整理待ち一覧
+## プロトコル要件
 
-以前に列挙された逸脱はすべて今回のパスで解決済みです——保留項目はありません:
+`ProtoExport` ツールが強制する確定ルールです。権威ソース: [GameFrameX.Tools README](https://github.com/GameFrameX/GameFrameX.Tools#readme)。
 
-- ✅ ファイル命名: `_120_Social.proto` → `Social_120.proto`、`_-120_InnerSocial_s.proto` → `Inner_Social_-120.proto`、`Inner_Basic` パッケージ → `InnerBasic`。
-- ✅ `RespItemChange` は `RespSellItem` にリネームし、`ReqSellItem` とペア化。
-- ✅ `Common_20.proto`: サンプル残留（`Person` / `AddressBook` / `PhoneNumber`）を削除。
-- ✅ フィールドコメントと波括弧・インデントのスタイルを整理。
+### ファイル形式
 
-上記の規約はコードベースに完全に反映済みです。
+```protobuf
+syntax = "proto3";     // 必須: proto3 のみサポート
+package Basic;
+option module = 10;    // 必須: モジュール ID を定義すること
+```
+
+### メッセージ命名
+
+- **リクエスト**: `Req<Name>`（例: `ReqLogin`、`ReqHeartBeat`）
+- **レスポンス**: `Resp<Name>`（例: `RespLogin`）
+- **通知**: `Notify<Name>`（例: `NotifyBagInfoChanged`）
+- すべてのメッセージ名、フィールド名、列挙型名、列挙値は **UpperCamelCase** を使用。
+
+### モジュール ID
+
+| ID 範囲 | 用途 |
+|---------|------|
+| `0` ~ `32767` | クライアント ↔ サーバー |
+| `-32768` ~ `-1` | サーバー ↔ サーバー（内部） |
+
+### フィールド番号
+
+- メッセージのフィールド番号は **800 未満**であること（`>= 800` はシステム予約で、パースエラーを引き起こします）。
+- `ErrorCode` は `Resp` メッセージの **予約フィールド名** です——手動で定義しないでください。ツールがすべての `Resp` に `ErrorCode` フィールドを自動生成します。
+
+### 制限事項
+
+- **ネスト型の禁止** —— 別の `message` の内部で `message` / `enum` を宣言できない。
+- **RPC 定義の禁止** —— `service` ブロックは非サポート。
+- **proto3 専用** —— `syntax = "proto3";` が必須。proto2 は非サポート。
+
+### コメント基準
+
+- すべての `message` / `enum` の**上**に、その目的を述べるコメント行を置く。
+- すべてのフィールド / 列挙値の行末に**インラインコメント**を置く。
+
+### サーバー専用ファイル
+
+エクスポートツールはサーバー専用 proto ファイルを**ファイル名の接尾辞** `-s` または `_s`（例: `player-s.proto`、`economy_s.proto`）で識別します。取り込むには `--isServer true` を渡してください。デフォルト `--isServer false` ではスキップされ、サーバー専用メッセージがクライアントに漏れることはありません。
+
+内部プロトコルはさらにルーティング分離のために**負のモジュール ID** を持ちます（上記「モジュール ID」表を参照）。
+
+> **現在のリポジトリに関する注記:** ここの内部ファイルは `Inner_` プレフィックスと負のモジュール ID を併用します（例: `Inner_Social_-120.proto`）。`-s`/`_s` 接尾辞と負の ID 規約はどちらもサーバー専用ルーティングを実現します——どちらかを選び、モジュール内で一貫させてください。
 
 ## サポートするエクスポート言語
 
-Proto 定義は `Tools/ProtoExport` ツール（.NET 10）により複数のターゲット言語にコード生成されます。
+| 言語 | Mode & Flags | ローカルスクリプト | Docker |
+|------|--------------|--------------------|--------|
+| C# (Server) | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | ✅ |
+| C# (Client / Unity / Godot) | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | ✅ |
+| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | ✅ |
+| Go | `go` | `Proto2GoExport.sh` / `.bat` | ✅ |
+| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | ✅ |
+| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | ✅ |
+| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | ✅ |
 
-| 言語 | スクリプト |
-|------|------------|
-| C# (Client) | `Proto2CsExport_Client.sh` / `.bat` |
-| C# (Server) | `Proto2CsExport_Server.sh` / `.bat` |
-| C# (All) | `Proto2CsExport_All.bat` |
-| C++ | `Proto2CppExport.sh` / `.bat` |
-| Go | `Proto2GoExport.sh` / `.bat` |
-| Lua | `Proto2LuaExport.sh` / `.bat` |
-| TypeScript | `Proto2TsExport.sh` / `.bat` |
-| TypeScript (LayaBox) | `Proto2TsExport_LayaBox.sh` |
+### Docker 例
+
+**C# (Server):**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Server/GameFrameX.Proto/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --usingStatements "using System|using ProtoBuf|using System.Collections.Generic|using GameFrameX.NetWork.Abstractions|using GameFrameX.NetWork.Messages" \
+  --isGenerateDescription true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
+```
+
+**Go:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./GoServer/proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode go --inputPath /protos --outputPath /output --namespaceName proto
+```
+
+**TypeScript:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Laya/src/gameframex/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode typescript --inputPath /protos --outputPath /output
+```
+
+**Lua:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Defold/scripts/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode lua --importPath "./network/" --inputPath /protos --outputPath /output
+```
+
+**C++:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Unreal/Source/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode cpp \
+  --usingStatements "#include <cstdint>|#include <string>|#include <vector>|#include <unordered_map>" \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto
+```
+
+パスマッピング: `-v <host>:<container>` はホストディレクトリをマウントします。`--inputPath` / `--outputPath` は**コンテナ側**のパス（`/protos`、`/output`）を参照する必要があり、ホスト側パスではありません。
+
+## エクスポートパラメータ
+
+### Core
+
+| パラメータ | 必須 | デフォルト | 説明 |
+|------------|------|-----------|------|
+| `--mode` | はい | - | `csharp` / `typescript` / `cpp` / `lua` / `go` |
+| `--inputPath` | はい | - | `.proto` ファイルを含むディレクトリ |
+| `--outputPath` | はい | - | 生成ファイルの出力ディレクトリ |
+| `--namespaceName` | いいえ | `""` | C# の名前空間（ドット区切りの場合は Go パッケージの最終セグメント） |
+| `--isGenerateErrorCode` | いいえ | `true` | `Resp` メッセージに `ErrorCode` フィールドを自動生成 |
+| `--requireComments` | いいえ | `none` | コメント検証レベル: `none` / `container` / `member` / `all` |
+
+### C#
+
+| パラメータ | デフォルト | 説明 |
+|------------|-----------|------|
+| `--usingStatements` | `""` | `\|` 区切りの using 文（例: `"using System\|using ProtoBuf"`） |
+| `--isGenerateDescription` | `false` | `[System.ComponentModel.Description]` 属性を生成 |
+| `--isServer` | `false` | サーバー専用 proto ファイルを取り込む（ファイル名が `-s` または `_s` で終わる） |
+
+### TypeScript
+
+| パラメータ | デフォルト | 説明 |
+|------------|-----------|------|
+| `--importPath` | `"../network/"` | 生成された import 文のインポートパス接頭辞 |
+| `--isGenerateDescription` | `false` | JSDoc 形式のコメントを生成 |
+
+### Legacy
+
+| パラメータ | デフォルト | 説明 |
+|------------|-----------|------|
+| `--isGenerateErrorCodeExcelFile` | `true` | エラーコード Excel ファイルを生成 |
+| `--errorCodeExcelFilePath` | `""` | エラーコード Excel ファイルのカスタムパス |
+
+## Docker
+
+`linux/amd64` と `linux/arm64` 向けのビルド済みイメージが提供されています:
+
+```bash
+# Docker Hub
+docker pull gameframex/gameframex-tools:latest
+
+# GitHub Container Registry (GHCR)
+docker pull ghcr.io/gameframex/gameframex.tools:latest
+```
+
+イメージのエントリポイントは `ProtoExport` ツールです——イメージ名の後に直接パラメータを記述します:
+
+```bash
+docker run --rm \
+  -v /path/to/protos:/protos \
+  -v /path/to/output:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --inputPath /protos --outputPath /output
+```
+
+## CI パイプライン
+
+このリポジトリには [`.github/workflows/proto-export.yml`](.github/workflows/proto-export.yml) が同梱されています。**各 `push`** および手動実行で自動的に走ります。
+
+| ステップ | 内容 |
+|----------|------|
+| 1 | `gameframex/gameframex-tools:latest` をプル |
+| 2 | `.proto` ソースをコンテナの `/protos` にマウント |
+| 3 | 6 つのターゲット言語を並列エクスポート（ビルドマトリクス） |
+| 4 | 各言語の出力をワークフロー artifact として収集 |
+| 5 | `main` への `push` 時、すべての artifact を添付したローリング **`latest` Release** を（再）公開 |
+
+最新の生成コードは [Releases ページ](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)からダウンロードできます——ツールチェーン不要。
 
 ## 依存関係
 
-このリポジトリは [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) に依存します。GameFrameX.Tools は、すべてのエクスポートスクリプトが使用する `ProtoExport` コードジェネレータを提供します。エクスポートを実行する前に、当該リポジトリから `Tools/ProtoExport` プロジェクトをビルドしてください。
+コード生成は [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) を使用します。同リポジトリが `ProtoExport` ジェネレータを提供します。
+
+- **Docker / CI** —— セットアップ不要。ビルド済みイメージにすべて含まれます。
+- **ローカルスクリプト** —— `Proto2*Export.sh/.bat` スクリプトを実行する前に、当該リポジトリから `Tools/ProtoExport` プロジェクトをビルドしてください（.NET 10 SDK が必要）。
 
 ## クイックスタート
 
-1. `Tools/ProtoExport` プロジェクトがビルド済みであることを確認してください（.NET 10 SDK が必要）。
-2. リポジトリルートから、ターゲット言語のエクスポートスクリプトを実行します。例：C#（サーバー）または Go：
+**オプション A —— CI からダウンロード（セットアップ不要）:** 必要な言語のバンドルを[最新の Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)から取得。
+
+**オプション B —— Docker:**
 
 ```bash
-./Proto2CsExport_Server.sh
+docker run --rm \
+  -v "$PWD":/protos \
+  -v "$PWD/output":/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
+**オプション C —— ローカルスクリプト**（`Tools/ProtoExport` のビルドが必要）:
+
 ```bash
-./Proto2GoExport.sh
+./Proto2CsExport_Server.sh   # C# (server)
+./Proto2GoExport.sh          # Go
 ```
 
 各スクリプトは `Tools/ProtoExport` の出力ディレクトリに移動し、言語固有のオプション（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` など）を指定して `dotnet ProtoExport.dll` を呼び出します。詳しくは[エクスポートドキュメント](https://gameframex.doc.alianblank.com/protobuf/require)を参照してください。
@@ -298,6 +483,7 @@ Proto 定義は `Tools/ProtoExport` ツール（.NET 10）により複数のタ�
 
 - [プロトコル仕様](https://gameframex.doc.alianblank.com/protobuf/require)
 - [GameFrameX ドキュメント](https://gameframex.doc.alianblank.com)
+- [GameFrameX.Tools（エクスポートツール）](https://github.com/GameFrameX/GameFrameX.Tools)
 - [GitHub リポジトリ](https://github.com/GameFrameX/GameFrameX.Protobuf)
 - [Issue トラッカー](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
 

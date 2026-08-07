@@ -7,12 +7,13 @@
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
+[![CI](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml/badge.svg)](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml)
 
 **인디 게임 개발자를 위한 올인원 솔루션 · 인디 개발자의 꿈을 실현**
 
 <br />
 
-[문서](https://gameframex.doc.alianblank.com) · [빠른 시작](#빠른-시작) · QQ 그룹: 467608841 / 233840761
+[문서](https://gameframex.doc.alianblank.com) · [빠른 시작](#빠른-시작) · [다국어 릴리스](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) · QQ 그룹: 467608841 / 233840761
 
 <br />
 
@@ -24,7 +25,13 @@
 
 GameFrameX.Protobuf는 GameFrameX 프레임워크의 통일된 네트워크 프로토콜 정의 리포지토리입니다. Protocol Buffers 3(`proto3`)를 채택하여, 메시지와 에러 코드 정의를 비즈니스 모듈별로 정리합니다. 각 `.proto` 파일은 숫자 모듈 ID(파일명 접미사)로 식별되며, 클라이언트와 서버 간의 메시지 라우팅 및 에러 코드 생성에 사용됩니다.
 
-전체 문서는 [GameFrameX 문서 사이트](https://gameframex.doc.alianblank.com/protobuf/require)에서 제공됩니다. 이 README는 리포지토리 구성과 내보내기 진입점에만 중점을 둡니다.
+코드 생성은 [GameFrameX.Tools `ProtoExport`](https://github.com/GameFrameX/GameFrameX.Tools) 도구가 담당합니다. 다음 세 가지 워크플로 중 자신에게 맞는 것을 고르세요:
+
+- **CI(설정 불필요)** —— 모든 `push` 시에 모든 언어로 자동 내보내기하여 롤링 [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)에 게시합니다. 다운로드만 하면 됩니다.
+- **Docker** —— `docker run gameframex/gameframex-tools:latest ...` 한 줄이면 도구 체인 설치가 필요 없습니다.
+- **로컬 스크립트** —— `Tools/ProtoExport`(.NET 10)를 한 번 빌드한 뒤 `Proto2*Export.sh/.bat` 스크립트를 실행합니다.
+
+전체 문서는 [GameFrameX 문서 사이트](https://gameframex.doc.alianblank.com/protobuf/require)에서 제공됩니다.
 
 ## 프로토콜 모듈
 
@@ -44,7 +51,7 @@ GameFrameX.Protobuf는 GameFrameX 프레임워크의 통일된 네트워크 프�
 
 ## 프로토콜 규칙
 
-protobuf가 처음이신가요? 이 절은 단계별 튜토리얼입니다. 위에서부터 아래로 읽어나가면, `.proto` 파일을 한 번도 작성해 본 적이 없어도 새 프로토콜 모듈을 추가할 수 있게 됩니다. 각 단계에는 알기 쉬운 설명, 최소 예시, 그리고 그 배경의 규칙이 담겨 있습니다.
+protobuf가 처음이신가요? 이 절은 단계별 튜토리얼입니다. 위에서부터 아래로 읽어나가면, `.proto` 파일을 한 번도 작성해 본 적이 없어도 새 프로토콜 모듈을 추가할 수 있게 됩니다. 각 단계에는 알기 쉬운 설명, 최소 예시, 그리고 그 배경의 규칙이 담겨 있습니다. 도구가 강제하는 엄격한 규칙 목록은 아래 [프로토콜 요구 사항](#프로토콜-요구-사항)을 참조하세요.
 
 ### 시작하기 전에 — 세 가지 쉬운 개념
 
@@ -249,47 +256,225 @@ message NotifyQuestChanged {
 }
 ```
 
-### 보완 대상 목록
+## 프로토콜 요구 사항
 
-이전에 나열된 모든 이탈 항목은 이번 점검에서 해결되었습니다——남은 항목이 없습니다:
+`ProtoExport` 도구가 강제하는 hard rule 입니다. 권위 있는 출처: [GameFrameX.Tools README](https://github.com/GameFrameX/GameFrameX.Tools#readme).
 
-- ✅ 파일 명명: `_120_Social.proto` → `Social_120.proto`, `_-120_InnerSocial_s.proto` → `Inner_Social_-120.proto`, `Inner_Basic` 패키지 → `InnerBasic`.
-- ✅ `RespItemChange` 를 `RespSellItem` 로 변경해 `ReqSellItem` 과 페어화.
-- ✅ `Common_20.proto`: 샘플 잔재(`Person` / `AddressBook` / `PhoneNumber`) 제거.
-- ✅ 필드 주석과 중괄호·들여쓰기 스타일 정리.
+### 파일 형식
 
-위 규칙은 코드베이스에 완전히 반영되었습니다.
+```protobuf
+syntax = "proto3";     // Required: only proto3 is supported
+package Basic;
+option module = 10;    // Required: module ID must be defined
+```
+
+### 메시지 명명
+
+- **요청**: `Req<Name>`(예: `ReqLogin`, `ReqHeartBeat`)
+- **응답**: `Resp<Name>`(예: `RespLogin`)
+- **알림**: `Notify<Name>`(예: `NotifyBagInfoChanged`)
+- 모든 메시지·필드·열거형 이름 및 열거값은 **UpperCamelCase** 를 사용해야 합니다.
+
+### 모듈 ID
+
+| ID 범위 | 용도 |
+|---------|------|
+| `0` ~ `32767` | 클라이언트 ↔ 서버 |
+| `-32768` ~ `-1` | 서버 ↔ 서버(내부) |
+
+### 필드 번호 매기기
+
+- 메시지 필드 번호는 **800 미만**이어야 합니다(`>= 800` 값은 시스템 예약이며 파싱 에러를 발생시킵니다).
+- `ErrorCode` 는 `Resp` 메시지에서 **예약된 필드명**입니다 —— 직접 정의하지 마세요. 도구가 모든 `Resp` 에 `ErrorCode` 필드를 자동 생성합니다.
+
+### 제약 사항
+
+- **중첩 타입 불가** —— 다른 메시지 안에서 `message` / `enum` 을 선언할 수 없습니다.
+- **RPC 정의 불가** —— `service` 블록은 지원되지 않습니다.
+- **proto3 전용** —— `syntax = "proto3";` 가 필수이며 proto2 는 지원되지 않습니다.
+
+### 주석 표준
+
+- 모든 `message` / `enum` **위**에 용도를 설명하는 주석 줄을 넣습니다.
+- 모든 필드 / 열거값 줄 끝에 **인라인** 주석을 붙입니다.
+
+### 서버 전용 파일
+
+내보내기 도구는 서버 전용 proto 파일을 **파일명 접미사** `-s` 또는 `_s`(예: `player-s.proto`, `economy_s.proto`)로 식별합니다. 이들을 포함하려면 `--isServer true` 를 전달하고, 기본값 `--isServer false` 에서는 건너뛰므로 서버 전용 메시지가 클라이언트에 유출되지 않습니다.
+
+내부 프로토콜은 라우팅 분리를 위해 추가로 **음수 모듈 ID**를 가집니다(위 모듈 ID 표 참조).
+
+> **현재 리포지토리 참고:** 여기서 내부 파일은 `Inner_` 접두사와 음수 모듈 ID를 함께 사용합니다(예: `Inner_Social_-120.proto`). `-s`/`_s` 접미사와 음수 ID 규칙 모두 서버 전용 라우팅을 달성합니다 —— 하나를 선택하고 모듈 내에서 일관되게 유지하세요.
 
 ## 지원하는 내보내기 언어
 
-Proto 정의는 `Tools/ProtoExport` 도구(.NET 10)를 통해 여러 대상 언어로 코드 생성됩니다.
+| 언어 | 모드 및 플래그 | 로컬 스크립트 | Docker |
+|------|----------------|---------------|--------|
+| C# (서버) | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | ✅ |
+| C# (클라이언트 / Unity / Godot) | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | ✅ |
+| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | ✅ |
+| Go | `go` | `Proto2GoExport.sh` / `.bat` | ✅ |
+| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | ✅ |
+| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | ✅ |
+| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | ✅ |
 
-| 언어 | 스크립트 |
-|------|----------|
-| C# (Client) | `Proto2CsExport_Client.sh` / `.bat` |
-| C# (Server) | `Proto2CsExport_Server.sh` / `.bat` |
-| C# (All) | `Proto2CsExport_All.bat` |
-| C++ | `Proto2CppExport.sh` / `.bat` |
-| Go | `Proto2GoExport.sh` / `.bat` |
-| Lua | `Proto2LuaExport.sh` / `.bat` |
-| TypeScript | `Proto2TsExport.sh` / `.bat` |
-| TypeScript (LayaBox) | `Proto2TsExport_LayaBox.sh` |
+### Docker 예시
+
+**C# (서버):**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Server/GameFrameX.Proto/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --usingStatements "using System|using ProtoBuf|using System.Collections.Generic|using GameFrameX.NetWork.Abstractions|using GameFrameX.NetWork.Messages" \
+  --isGenerateDescription true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
+```
+
+**Go:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./GoServer/proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode go --inputPath /protos --outputPath /output --namespaceName proto
+```
+
+**TypeScript:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Laya/src/gameframex/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode typescript --inputPath /protos --outputPath /output
+```
+
+**Lua:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Defold/scripts/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode lua --importPath "./network/" --inputPath /protos --outputPath /output
+```
+
+**C++:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Unreal/Source/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode cpp \
+  --usingStatements "#include <cstdint>|#include <string>|#include <vector>|#include <unordered_map>" \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto
+```
+
+경로 매핑: `-v <host>:<container>` 는 호스트 디렉터리를 마운트하고, `--inputPath` / `--outputPath` 는 **컨테이너 측** 경로(`/protos`, `/output`)를 참조해야 하며 호스트 경로가 아닙니다.
+
+## 내보내기 매개변수
+
+### 핵심
+
+| 매개변수 | 필수 | 기본값 | 설명 |
+|----------|------|--------|------|
+| `--mode` | Yes | - | `csharp` / `typescript` / `cpp` / `lua` / `go` |
+| `--inputPath` | Yes | - | `.proto` 파일들이 들어 있는 디렉터리 |
+| `--outputPath` | Yes | - | 생성된 파일의 출력 디렉터리 |
+| `--namespaceName` | No | `""` | C# 네임스페이스(또는 점으로 구분된 경우 Go 패키지의 마지막 세그먼트) |
+| `--isGenerateErrorCode` | No | `true` | `Resp` 메시지에 `ErrorCode` 필드 자동 생성 |
+| `--requireComments` | No | `none` | 주석 검증 레벨: `none` / `container` / `member` / `all` |
+
+### C#
+
+| 매개변수 | 기본값 | 설명 |
+|----------|--------|------|
+| `--usingStatements` | `""` | `\|` 로 구분된 using 문(예: `"using System\|using ProtoBuf"`) |
+| `--isGenerateDescription` | `false` | `[System.ComponentModel.Description]` 특성 생성 |
+| `--isServer` | `false` | 서버 전용 proto 파일 포함(파일명이 `-s` 또는 `_s` 로 끝남) |
+
+### TypeScript
+
+| 매개변수 | 기본값 | 설명 |
+|----------|--------|------|
+| `--importPath` | `"../network/"` | 생성된 import 문의 import 경로 접두사 |
+| `--isGenerateDescription` | `false` | JSDoc 스타일 주석 생성 |
+
+### 레거시
+
+| 매개변수 | 기본값 | 설명 |
+|----------|--------|------|
+| `--isGenerateErrorCodeExcelFile` | `true` | 에러 코드 Excel 파일 생성 |
+| `--errorCodeExcelFilePath` | `""` | 에러 코드 Excel 파일의 사용자 지정 경로 |
+
+## Docker
+
+`linux/amd64` 와 `linux/arm64` 용 사전 빌드 이미지가 제공됩니다:
+
+```bash
+# Docker Hub
+docker pull gameframex/gameframex-tools:latest
+
+# GitHub Container Registry (GHCR)
+docker pull ghcr.io/gameframex/gameframex.tools:latest
+```
+
+이미지의 entrypoint 는 `ProtoExport` 도구입니다 —— 이미지명 뒤에 매개변수를 직접 붙이면 됩니다:
+
+```bash
+docker run --rm \
+  -v /path/to/protos:/protos \
+  -v /path/to/output:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --inputPath /protos --outputPath /output
+```
+
+## CI 파이프라인
+
+이 리포지토리는 [`.github/workflows/proto-export.yml`](.github/workflows/proto-export.yml) 을 제공합니다. **모든 `push`** 및 수동 디스패치에서 자동으로 실행됩니다.
+
+| 단계 | 수행 내용 |
+|------|-----------|
+| 1 | `gameframex/gameframex-tools:latest` 풀 |
+| 2 | `.proto` 소스를 컨테이너의 `/protos` 에 마운트 |
+| 3 | 6개 대상 언어를 병렬로 내보내기(build matrix) |
+| 4 | 각 언어의 출력을 workflow artifact 로 수집 |
+| 5 | `main` 으로의 `push` 시, 모든 artifact 를 첨부한 롤링 **`latest` Release** (재)게시 |
+
+최신 생성 코드는 [Releases 페이지](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)에서 다운로드할 수 있습니다 —— 도구 체인이 필요 없습니다.
 
 ## 의존성
 
-이 리포지토리는 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)에 의존합니다. GameFrameX.Tools는 모든 내보내기 스크립트가 사용하는 `ProtoExport` 코드 생성기를 제공합니다. 내보내기를 실행하기 전에 해당 리포지토리에서 `Tools/ProtoExport` 프로젝트를 빌드하세요.
+코드 생성은 `ProtoExport` 생성기를 제공하는 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) 를 사용합니다.
+
+- **Docker / CI** —— 설정 불필요. 사전 빌드된 이미지에 모든 것이 포함되어 있습니다.
+- **로컬 스크립트** —— `Proto2*Export.sh/.bat` 스크립트를 실행하기 전에 해당 리포지토리에서 `Tools/ProtoExport` 프로젝트를 빌드해야 합니다(.NET 10 SDK 필요).
 
 ## 빠른 시작
 
-1. `Tools/ProtoExport` 프로젝트가 빌드되어 있는지 확인하세요(.NET 10 SDK 필요).
-2. 리포지토리 루트에서 대상 언어의 내보내기 스크립트를 실행합니다. 예: C#(서버) 또는 Go:
+**옵션 A — CI에서 다운로드(설정 불필요):** [최신 Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)에서 사용 언어의 번들을 받으세요.
+
+**옵션 B — Docker:**
 
 ```bash
-./Proto2CsExport_Server.sh
+docker run --rm \
+  -v "$PWD":/protos \
+  -v "$PWD/output":/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
+**옵션 C — 로컬 스크립트**(`Tools/ProtoExport` 빌드 필요):
+
 ```bash
-./Proto2GoExport.sh
+./Proto2CsExport_Server.sh   # C# (서버)
+./Proto2GoExport.sh          # Go
 ```
 
 각 스크립트는 `Tools/ProtoExport` 출력 디렉터리로 이동한 뒤, 언어별 옵션(`--mode`, `--isServer`, `--isGenerateDescription`, `--isGenerateErrorCode` 등)을 지정해 `dotnet ProtoExport.dll`을 호출합니다. 자세한 내용은 [내보내기 문서](https://gameframex.doc.alianblank.com/protobuf/require)를 참조하세요.
@@ -298,9 +483,10 @@ Proto 정의는 `Tools/ProtoExport` 도구(.NET 10)를 통해 여러 대상 언�
 
 - [프로토콜 사양](https://gameframex.doc.alianblank.com/protobuf/require)
 - [GameFrameX 문서](https://gameframex.doc.alianblank.com)
+- [GameFrameX.Tools(내보내기 도구)](https://github.com/GameFrameX/GameFrameX.Tools)
 - [GitHub 리포지토리](https://github.com/GameFrameX/GameFrameX.Protobuf)
 - [이슈 트래커](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
 
 ## 라이선스
 
-이 프로젝트는 [Apache 2.0 라이선스](LICENSE.md)로 제공됩니다.
+이 프로젝트는 [Apache License 2.0](LICENSE.md)로 제공됩니다.

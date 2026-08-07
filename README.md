@@ -7,12 +7,13 @@
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
+[![CI](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml/badge.svg)](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml)
 
 **All-in-One Solution for Indie Game Development · Empowering Indie Developers' Dreams**
 
 <br />
 
-[Documentation](https://gameframex.doc.alianblank.com) · [Quick Start](#quick-start) · QQ Group: 467608841 / 233840761
+[Documentation](https://gameframex.doc.alianblank.com) · [Quick Start](#quick-start) · [Multi-Language Releases](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) · QQ Group: 467608841 / 233840761
 
 <br />
 
@@ -24,7 +25,13 @@
 
 GameFrameX.Protobuf is the unified network protocol definition repository for the GameFrameX framework. It uses Protocol Buffers 3 (`proto3`) and organizes message and error-code definitions by business module. Each `.proto` file is identified by a numeric module ID (the suffix in the filename), which is used for routing and error-code generation across client and server.
 
-Full documentation is hosted at the [GameFrameX documentation site](https://gameframex.doc.alianblank.com/protobuf/require) — this README focuses on the repository map and export entry points.
+Code generation is driven by the [GameFrameX.Tools `ProtoExport`](https://github.com/GameFrameX/GameFrameX.Tools) tool. Pick whichever workflow fits you:
+
+- **CI (zero setup)** — every `push` auto-exports all languages and publishes to the rolling [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest). Just download.
+- **Docker** — `docker run gameframex/gameframex-tools:latest ...`, no toolchain to install.
+- **Local scripts** — build `Tools/ProtoExport` (.NET 10) once, then run the `Proto2*Export.sh/.bat` scripts.
+
+Full documentation is hosted at the [GameFrameX documentation site](https://gameframex.doc.alianblank.com/protobuf/require).
 
 ## Protocol Modules
 
@@ -44,7 +51,7 @@ Full documentation is hosted at the [GameFrameX documentation site](https://game
 
 ## Protocol Conventions
 
-New to protobuf? This section is a step-by-step tutorial. Read it top to bottom and you'll be able to add a new protocol module even if you've never written a `.proto` file. Each step comes with a plain-language explanation, a minimal example, and the rule behind it.
+New to protobuf? This section is a step-by-step tutorial. Read it top to bottom and you'll be able to add a new protocol module even if you've never written a `.proto` file. Each step comes with a plain-language explanation, a minimal example, and the rule behind it. For the strict, tool-enforced rule list, see [Protocol Requirements](#protocol-requirements) below.
 
 ### Before You Start — Three Concepts in Plain Terms
 
@@ -249,47 +256,225 @@ message NotifyQuestChanged {
 }
 ```
 
-### Pending Cleanup
+## Protocol Requirements
 
-All previously listed deviations have been resolved in this pass — nothing remains pending:
+The hard rules the `ProtoExport` tool enforces. Authoritative source: [GameFrameX.Tools README](https://github.com/GameFrameX/GameFrameX.Tools#readme).
 
-- ✅ File naming: `_120_Social.proto` → `Social_120.proto`, `_-120_InnerSocial_s.proto` → `Inner_Social_-120.proto`, `Inner_Basic` package → `InnerBasic`.
-- ✅ `RespItemChange` renamed to `RespSellItem` to pair with `ReqSellItem`.
-- ✅ `Common_20.proto`: leftover examples (`Person` / `AddressBook` / `PhoneNumber`) removed.
-- ✅ Field comments and brace / indent style cleaned up.
+### File Format
 
-The conventions above are now fully reflected in the codebase.
+```protobuf
+syntax = "proto3";     // Required: only proto3 is supported
+package Basic;
+option module = 10;    // Required: module ID must be defined
+```
+
+### Message Naming
+
+- **Request**: `Req<Name>` (e.g. `ReqLogin`, `ReqHeartBeat`)
+- **Response**: `Resp<Name>` (e.g. `RespLogin`)
+- **Notification**: `Notify<Name>` (e.g. `NotifyBagInfoChanged`)
+- All message, field, enum names and enum values must use **UpperCamelCase**.
+
+### Module ID
+
+| ID Range | Purpose |
+|----------|---------|
+| `0` ~ `32767` | Client ↔ Server |
+| `-32768` ~ `-1` | Server ↔ Server (internal) |
+
+### Field Numbering
+
+- Message field numbers must be **less than 800** (values `>= 800` are system-reserved and will cause parse errors).
+- `ErrorCode` is a **reserved field name** in `Resp` messages — do not define it manually. The tool auto-generates an `ErrorCode` field on every `Resp`.
+
+### Restrictions
+
+- **No nested types** — `message` / `enum` cannot be declared inside another message.
+- **No RPC definitions** — `service` blocks are not supported.
+- **Only proto3** — `syntax = "proto3";` is required; proto2 is not supported.
+
+### Comment Standards
+
+- A comment line **above** every `message` / `enum` describing its purpose.
+- An **inline** comment at the end of every field / enum-value line.
+
+### Server-Only Files
+
+The export tool identifies server-only proto files by **filename suffix** `-s` or `_s` (e.g. `player-s.proto`, `economy_s.proto`). Pass `--isServer true` to include them; with the default `--isServer false` they are skipped, so server-only messages never leak to clients.
+
+Internal protocols additionally carry a **negative module ID** for routing separation (see the Module ID table above).
+
+> **Note on the current repository:** internal files here use an `Inner_` prefix together with a negative module ID (e.g. `Inner_Social_-120.proto`). Both the `-s`/`_s` suffix and the negative-ID convention achieve server-only routing — pick one and stay consistent within a module.
 
 ## Supported Export Languages
 
-Proto definitions are code-generated to multiple target languages via the `Tools/ProtoExport` tool (.NET 10).
+| Language | Mode & Flags | Local Script | Docker |
+|----------|--------------|--------------|--------|
+| C# (Server) | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | ✅ |
+| C# (Client / Unity / Godot) | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | ✅ |
+| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | ✅ |
+| Go | `go` | `Proto2GoExport.sh` / `.bat` | ✅ |
+| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | ✅ |
+| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | ✅ |
+| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | ✅ |
 
-| Language | Script |
-|----------|--------|
-| C# (Client) | `Proto2CsExport_Client.sh` / `.bat` |
-| C# (Server) | `Proto2CsExport_Server.sh` / `.bat` |
-| C# (All) | `Proto2CsExport_All.bat` |
-| C++ | `Proto2CppExport.sh` / `.bat` |
-| Go | `Proto2GoExport.sh` / `.bat` |
-| Lua | `Proto2LuaExport.sh` / `.bat` |
-| TypeScript | `Proto2TsExport.sh` / `.bat` |
-| TypeScript (LayaBox) | `Proto2TsExport_LayaBox.sh` |
+### Docker Examples
+
+**C# (Server):**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Server/GameFrameX.Proto/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --usingStatements "using System|using ProtoBuf|using System.Collections.Generic|using GameFrameX.NetWork.Abstractions|using GameFrameX.NetWork.Messages" \
+  --isGenerateDescription true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
+```
+
+**Go:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./GoServer/proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode go --inputPath /protos --outputPath /output --namespaceName proto
+```
+
+**TypeScript:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Laya/src/gameframex/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode typescript --inputPath /protos --outputPath /output
+```
+
+**Lua:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Defold/scripts/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode lua --importPath "./network/" --inputPath /protos --outputPath /output
+```
+
+**C++:**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Unreal/Source/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode cpp \
+  --usingStatements "#include <cstdint>|#include <string>|#include <vector>|#include <unordered_map>" \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto
+```
+
+Path mapping: `-v <host>:<container>` mounts a host directory; `--inputPath` / `--outputPath` must reference the **container-side** paths (`/protos`, `/output`), not the host paths.
+
+## Export Parameters
+
+### Core
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `--mode` | Yes | - | `csharp` / `typescript` / `cpp` / `lua` / `go` |
+| `--inputPath` | Yes | - | Directory containing the `.proto` files |
+| `--outputPath` | Yes | - | Output directory for generated files |
+| `--namespaceName` | No | `""` | C# namespace (or Go package last segment if dot-separated) |
+| `--isGenerateErrorCode` | No | `true` | Auto-generate `ErrorCode` field on `Resp` messages |
+| `--requireComments` | No | `none` | Comment validation level: `none` / `container` / `member` / `all` |
+
+### C#
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--usingStatements` | `""` | Using statements separated by `\|` (e.g. `"using System\|using ProtoBuf"`) |
+| `--isGenerateDescription` | `false` | Generate `[System.ComponentModel.Description]` attributes |
+| `--isServer` | `false` | Include server-only proto files (filename ends with `-s` or `_s`) |
+
+### TypeScript
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--importPath` | `"../network/"` | Import path prefix for generated import statements |
+| `--isGenerateDescription` | `false` | Generate JSDoc-style comments |
+
+### Legacy
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--isGenerateErrorCodeExcelFile` | `true` | Generate the error-code Excel file |
+| `--errorCodeExcelFilePath` | `""` | Custom path for the error-code Excel file |
+
+## Docker
+
+Pre-built images are available for `linux/amd64` and `linux/arm64`:
+
+```bash
+# Docker Hub
+docker pull gameframex/gameframex-tools:latest
+
+# GitHub Container Registry (GHCR)
+docker pull ghcr.io/gameframex/gameframex.tools:latest
+```
+
+The image entrypoint is the `ProtoExport` tool — append parameters directly after the image name:
+
+```bash
+docker run --rm \
+  -v /path/to/protos:/protos \
+  -v /path/to/output:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --inputPath /protos --outputPath /output
+```
+
+## CI Pipeline
+
+This repository ships [`.github/workflows/proto-export.yml`](.github/workflows/proto-export.yml). It runs automatically on **every `push`** and on manual dispatch.
+
+| Step | What happens |
+|------|--------------|
+| 1 | Pull `gameframex/gameframex-tools:latest` |
+| 2 | Mount the `.proto` sources into the container at `/protos` |
+| 3 | Export all six target languages in parallel (build matrix) |
+| 4 | Collect each language's output as a workflow artifact |
+| 5 | On `push` to `main`, (re)publish a rolling **`latest` Release** with all artifacts attached |
+
+Download the latest generated code from the [Releases page](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) — no toolchain required.
 
 ## Dependencies
 
-This repository depends on [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools), which provides the `ProtoExport` code generator used by all export scripts. Build the `Tools/ProtoExport` project from that repository before running any export.
+Code generation uses [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools), which provides the `ProtoExport` generator.
+
+- **Docker / CI** — no setup needed; the pre-built image contains everything.
+- **Local scripts** — build the `Tools/ProtoExport` project from that repository (requires the .NET 10 SDK) before running any `Proto2*Export.sh/.bat` script.
 
 ## Quick Start
 
-1. Ensure the `Tools/ProtoExport` project is built (requires .NET 10 SDK).
-2. From the repository root, run the export script for your target language — for example, C# (server) or Go:
+**Option A — Download from CI (zero setup):** grab the bundle for your language from the [latest Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest).
+
+**Option B — Docker:**
 
 ```bash
-./Proto2CsExport_Server.sh
+docker run --rm \
+  -v "$PWD":/protos \
+  -v "$PWD/output":/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
+**Option C — Local scripts** (requires a built `Tools/ProtoExport`):
+
 ```bash
-./Proto2GoExport.sh
+./Proto2CsExport_Server.sh   # C# (server)
+./Proto2GoExport.sh          # Go
 ```
 
 Each script switches into the `Tools/ProtoExport` output directory and invokes `dotnet ProtoExport.dll` with language-specific options (`--mode`, `--isServer`, `--isGenerateDescription`, `--isGenerateErrorCode`, etc.). See the [export documentation](https://gameframex.doc.alianblank.com/protobuf/require) for details.
@@ -298,6 +483,7 @@ Each script switches into the `Tools/ProtoExport` output directory and invokes `
 
 - [Protocol Specification](https://gameframex.doc.alianblank.com/protobuf/require)
 - [GameFrameX Documentation](https://gameframex.doc.alianblank.com)
+- [GameFrameX.Tools (export tool)](https://github.com/GameFrameX/GameFrameX.Tools)
 - [GitHub Repository](https://github.com/GameFrameX/GameFrameX.Protobuf)
 - [Issue Tracker](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
 

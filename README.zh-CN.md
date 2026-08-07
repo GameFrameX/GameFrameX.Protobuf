@@ -7,12 +7,13 @@
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
+[![CI](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml/badge.svg)](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml)
 
 **独立游戏前后端一体化解决方案 · 独立游戏开发者的圆梦大使**
 
 <br />
 
-[文档](https://gameframex.doc.alianblank.com) · [快速开始](#快速开始) · QQ群: 467608841 / 233840761
+[文档](https://gameframex.doc.alianblank.com) · [快速开始](#快速开始) · [多语言 Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) · QQ群: 467608841 / 233840761
 
 <br />
 
@@ -24,7 +25,13 @@
 
 GameFrameX.Protobuf 是 GameFrameX 框架的统一网络协议定义仓库。采用 Protocol Buffers 3（`proto3`），按业务模块组织消息与错误码定义。每个 `.proto` 文件以数字模块 ID（文件名后缀）标识，用于客户端与服务端的消息路由和错误码生成。
 
-完整文档托管在 [GameFrameX 文档站](https://gameframex.doc.alianblank.com/protobuf/require) —— 本 README 仅聚焦仓库构成与导出入口。
+代码生成由 [GameFrameX.Tools `ProtoExport`](https://github.com/GameFrameX/GameFrameX.Tools) 工具驱动。可任选一种工作流：
+
+- **CI（零配置）** —— 每次 `push` 都会自动导出全部语言并发布到滚动更新的 [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)，直接下载即可。
+- **Docker** —— `docker run gameframex/gameframex-tools:latest ...`，无需本地工具链。
+- **本地脚本** —— 先构建一次 `Tools/ProtoExport`（.NET 10），再运行 `Proto2*Export.sh/.bat` 脚本。
+
+完整文档托管在 [GameFrameX 文档站](https://gameframex.doc.alianblank.com/protobuf/require)。
 
 ## 协议模块
 
@@ -44,7 +51,7 @@ GameFrameX.Protobuf 是 GameFrameX 框架的统一网络协议定义仓库。采
 
 ## 协议规范
 
-第一次接触 protobuf？本节是一个循序渐进的教程。从头读到尾，哪怕你从没写过 `.proto` 文件，也能学会新增一个协议模块。每一步都包含大白话说明、最小示例，以及背后的规则。
+第一次接触 protobuf？本节是一个循序渐进的教程。从头读到尾，哪怕你从没写过 `.proto` 文件，也能学会新增一个协议模块。每一步都包含大白话说明、最小示例，以及背后的规则。严格的、由工具强制执行的规则列表见下方的[协议要求](#协议要求)。
 
 ### 动手之前 —— 三个大白话概念
 
@@ -249,47 +256,225 @@ message NotifyQuestChanged {
 }
 ```
 
-### 待整改清单
+## 协议要求
 
-此前列出的所有偏离项均已在本次规范化过程中解决——无遗留待办：
+以下是 `ProtoExport` 工具强制执行的硬性规则。权威来源：[GameFrameX.Tools README](https://github.com/GameFrameX/GameFrameX.Tools#readme)。
 
-- ✅ 文件命名：`_120_Social.proto` → `Social_120.proto`、`_-120_InnerSocial_s.proto` → `Inner_Social_-120.proto`、`Inner_Basic` 包名 → `InnerBasic`。
-- ✅ `RespItemChange` 已改名为 `RespSellItem`，与 `ReqSellItem` 配对。
-- ✅ `Common_20.proto`：示例残留（`Person` / `AddressBook` / `PhoneNumber`）已移除。
-- ✅ 字段注释与大括号、缩进风格已整理。
+### 文件格式
 
-上述约定现已完整落实到代码库。
+```protobuf
+syntax = "proto3";     // Required: only proto3 is supported
+package Basic;
+option module = 10;    // Required: module ID must be defined
+```
+
+### 消息命名
+
+- **请求**：`Req<Name>`（如 `ReqLogin`、`ReqHeartBeat`）
+- **响应**：`Resp<Name>`（如 `RespLogin`）
+- **通知**：`Notify<Name>`（如 `NotifyBagInfoChanged`）
+- 所有 message、field、enum 名与枚举值必须使用 **UpperCamelCase**。
+
+### 模块 ID
+
+| ID 范围 | 用途 |
+|---------|------|
+| `0` ~ `32767` | 客户端 ↔ 服务端 |
+| `-32768` ~ `-1` | 服务端 ↔ 服务端（内部） |
+
+### 字段编号
+
+- message 字段编号必须**小于 800**（`>= 800` 的值由系统保留，会导致解析错误）。
+- `ErrorCode` 是 `Resp` 消息中的**保留字段名**——不要手动定义。工具会在每个 `Resp` 上自动生成 `ErrorCode` 字段。
+
+### 限制
+
+- **禁止嵌套类型** —— 不能在另一个 message 中声明 `message` / `enum`。
+- **禁止 RPC 定义** —— 不支持 `service` 块。
+- **仅支持 proto3** —— 必须使用 `syntax = "proto3";`，不支持 proto2。
+
+### 注释规范
+
+- 每个 `message` / `enum` 上方需有一行注释，描述其用途。
+- 每行 field / 枚举值末尾需有**行内**注释。
+
+### 仅服务端文件
+
+导出工具通过**文件名后缀** `-s` 或 `_s`（如 `player-s.proto`、`economy_s.proto`）识别仅服务端的 proto 文件。传入 `--isServer true` 可将其纳入；默认 `--isServer false` 时它们会被跳过，因此仅服务端的消息永远不会泄露给客户端。
+
+内部协议另外使用**负的模块 ID** 实现路由隔离（参见上方模块 ID 表）。
+
+> **关于当前仓库的说明：** 这里的内部文件采用 `Inner_` 前缀加负模块 ID 的写法（如 `Inner_Social_-120.proto`）。`-s`/`_s` 后缀和负 ID 约定都能实现仅服务端路由——选择其中一种，并在一个模块内保持一致。
 
 ## 支持的导出语言
 
-Proto 定义通过 `Tools/ProtoExport` 工具（.NET 10）代码生成到多种目标语言。
+| 语言 | Mode 与参数 | 本地脚本 | Docker |
+|------|-------------|----------|--------|
+| C#（服务端） | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | ✅ |
+| C#（客户端 / Unity / Godot） | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | ✅ |
+| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | ✅ |
+| Go | `go` | `Proto2GoExport.sh` / `.bat` | ✅ |
+| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | ✅ |
+| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | ✅ |
+| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | ✅ |
 
-| 语言 | 脚本 |
-|------|------|
-| C# (Client) | `Proto2CsExport_Client.sh` / `.bat` |
-| C# (Server) | `Proto2CsExport_Server.sh` / `.bat` |
-| C# (All) | `Proto2CsExport_All.bat` |
-| C++ | `Proto2CppExport.sh` / `.bat` |
-| Go | `Proto2GoExport.sh` / `.bat` |
-| Lua | `Proto2LuaExport.sh` / `.bat` |
-| TypeScript | `Proto2TsExport.sh` / `.bat` |
-| TypeScript (LayaBox) | `Proto2TsExport_LayaBox.sh` |
+### Docker 示例
+
+**C#（服务端）：**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Server/GameFrameX.Proto/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --usingStatements "using System|using ProtoBuf|using System.Collections.Generic|using GameFrameX.NetWork.Abstractions|using GameFrameX.NetWork.Messages" \
+  --isGenerateDescription true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
+```
+
+**Go：**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./GoServer/proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode go --inputPath /protos --outputPath /output --namespaceName proto
+```
+
+**TypeScript：**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Laya/src/gameframex/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode typescript --inputPath /protos --outputPath /output
+```
+
+**Lua：**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Defold/scripts/protobuf:/output \
+  gameframex/gameframex-tools:latest \
+  --mode lua --importPath "./network/" --inputPath /protos --outputPath /output
+```
+
+**C++：**
+
+```bash
+docker run --rm \
+  -v ./Protobuf:/protos \
+  -v ./Unreal/Source/Proto:/output \
+  gameframex/gameframex-tools:latest \
+  --mode cpp \
+  --usingStatements "#include <cstdint>|#include <string>|#include <vector>|#include <unordered_map>" \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto
+```
+
+路径映射：`-v <host>:<container>` 挂载宿主机目录；`--inputPath` / `--outputPath` 必须引用**容器内**路径（`/protos`、`/output`），而非宿主机路径。
+
+## 导出参数
+
+### 核心参数
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--mode` | 是 | - | `csharp` / `typescript` / `cpp` / `lua` / `go` |
+| `--inputPath` | 是 | - | 存放 `.proto` 文件的目录 |
+| `--outputPath` | 是 | - | 生成文件的输出目录 |
+| `--namespaceName` | 否 | `""` | C# namespace（对于 Go，若以点分隔则取最后一段作为 package 名） |
+| `--isGenerateErrorCode` | 否 | `true` | 是否在 `Resp` 消息上自动生成 `ErrorCode` 字段 |
+| `--requireComments` | 否 | `none` | 注释校验级别：`none` / `container` / `member` / `all` |
+
+### C#
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--usingStatements` | `""` | using 语句，以 `\|` 分隔（如 `"using System\|using ProtoBuf"`） |
+| `--isGenerateDescription` | `false` | 是否生成 `[System.ComponentModel.Description]` 特性 |
+| `--isServer` | `false` | 是否纳入仅服务端的 proto 文件（文件名以 `-s` 或 `_s` 结尾） |
+
+### TypeScript
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--importPath` | `"../network/"` | 生成的 import 语句的路径前缀 |
+| `--isGenerateDescription` | `false` | 是否生成 JSDoc 风格注释 |
+
+### 旧版参数（Legacy）
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--isGenerateErrorCodeExcelFile` | `true` | 是否生成错误码 Excel 文件 |
+| `--errorCodeExcelFilePath` | `""` | 错误码 Excel 文件的自定义路径 |
+
+## Docker
+
+预构建镜像支持 `linux/amd64` 和 `linux/arm64`：
+
+```bash
+# Docker Hub
+docker pull gameframex/gameframex-tools:latest
+
+# GitHub Container Registry (GHCR)
+docker pull ghcr.io/gameframex/gameframex.tools:latest
+```
+
+镜像入口点即 `ProtoExport` 工具——直接在镜像名后追加参数：
+
+```bash
+docker run --rm \
+  -v /path/to/protos:/protos \
+  -v /path/to/output:/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --inputPath /protos --outputPath /output
+```
+
+## CI 流水线
+
+本仓库自带 [`.github/workflows/proto-export.yml`](.github/workflows/proto-export.yml)。它在**每次 `push`** 时自动运行，也支持手动触发。
+
+| 步骤 | 发生什么 |
+|------|----------|
+| 1 | 拉取 `gameframex/gameframex-tools:latest` |
+| 2 | 将 `.proto` 源码挂载到容器的 `/protos` |
+| 3 | 并行导出全部六种目标语言（构建 matrix） |
+| 4 | 将每种语言的输出收集为 workflow artifact |
+| 5 | 当 `push` 到 `main` 时，（重新）发布滚动更新的 **`latest` Release**，附带全部 artifact |
+
+在 [Releases 页面](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) 下载最新生成的代码——无需任何工具链。
 
 ## 依赖
 
-本仓库依赖 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)，它提供了所有导出脚本使用的 `ProtoExport` 代码生成器。运行任何导出前，请先从该仓库构建 `Tools/ProtoExport` 项目。
+代码生成使用 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)，它提供 `ProtoExport` 生成器。
+
+- **Docker / CI** —— 无需任何配置；预构建镜像已包含全部依赖。
+- **本地脚本** —— 运行任何 `Proto2*Export.sh/.bat` 脚本前，需先从该仓库构建 `Tools/ProtoExport` 项目（需要 .NET 10 SDK）。
 
 ## 快速开始
 
-1. 确保已构建 `Tools/ProtoExport` 项目（需要 .NET 10 SDK）。
-2. 在仓库根目录运行目标语言的导出脚本，例如 C#（服务端）或 Go：
+**方案 A —— 从 CI 下载（零配置）：** 从[最新 Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) 获取你所需语言的产物包。
+
+**方案 B —— Docker：**
 
 ```bash
-./Proto2CsExport_Server.sh
+docker run --rm \
+  -v "$PWD":/protos \
+  -v "$PWD/output":/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
+**方案 C —— 本地脚本**（需要先构建 `Tools/ProtoExport`）：
+
 ```bash
-./Proto2GoExport.sh
+./Proto2CsExport_Server.sh   # C#（服务端）
+./Proto2GoExport.sh          # Go
 ```
 
 每个脚本会切换到 `Tools/ProtoExport` 输出目录，并以语言相关参数（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` 等）调用 `dotnet ProtoExport.dll`。详见[导出文档](https://gameframex.doc.alianblank.com/protobuf/require)。
@@ -298,6 +483,7 @@ Proto 定义通过 `Tools/ProtoExport` 工具（.NET 10）代码生成到多种�
 
 - [协议规范](https://gameframex.doc.alianblank.com/protobuf/require)
 - [GameFrameX 文档](https://gameframex.doc.alianblank.com)
+- [GameFrameX.Tools（导出工具）](https://github.com/GameFrameX/GameFrameX.Tools)
 - [GitHub 仓库](https://github.com/GameFrameX/GameFrameX.Protobuf)
 - [Issue 跟踪](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
 
