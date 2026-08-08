@@ -37,17 +37,17 @@ Full documentation is hosted at the [GameFrameX documentation site](https://game
 
 | Proto File | Module | Description |
 |------------|--------|-------------|
-| `InnerBasic_2.proto` | 2 | Internal basic protocol |
-| `Basic_10.proto` | 10 | Basic protocol |
-| `Common_20.proto` | 20 | Common protocol (error codes, shared types) |
-| `Bag_100.proto` | 100 | Inventory / bag protocol |
-| `Social_120.proto` | 120 | Social protocol |
-| `Inner_Social_-120.proto` | -120 | Internal social protocol (server-side) |
-| `User_300.proto` | 300 | User / account protocol |
-| `Attribute_310.proto` | 310 | Player attribute sync protocol |
-| `Room_400.proto` | 400 | Room protocol |
-| `RockPaperScissors_410.proto` | 410 | Rock-paper-scissors mini-game protocol |
-| `Mail_500.proto` | 500 | Mail system protocol |
+| `_0002_InnerBasic.proto` | 2 | Internal basic protocol |
+| `_0010_Basic.proto` | 10 | Basic protocol |
+| `_0020_Common.proto` | 20 | Common protocol (error codes, shared types) |
+| `_0100_Bag.proto` | 100 | Inventory / bag protocol |
+| `_0120_Social.proto` | 120 | Social protocol |
+| `_-0120_Inner_Social.proto` | -120 | Internal social protocol (server-side) |
+| `_0300_User.proto` | 300 | User / account protocol |
+| `_0310_Attribute.proto` | 310 | Player attribute sync protocol |
+| `_0400_Room.proto` | 400 | Room protocol |
+| `_0410_RockPaperScissors.proto` | 410 | Rock-paper-scissors mini-game protocol |
+| `_0500_Mail.proto` | 500 | Mail system protocol |
 
 ## Protocol Conventions
 
@@ -61,26 +61,26 @@ New to protobuf? This section is a step-by-step tutorial. Read it top to bottom 
 
 ### Step 1 — Create the File
 
-Every business area lives in its own file named `<Domain>_<ModuleID>.proto`. The filename itself tells you the domain and its routing number.
+Every business area lives in its own file named `_<ModuleID:0000>_<Domain>.proto` — **every filename starts with `_`, followed by the module ID zero-padded to 4 digits**, so all files line up in numerical order identically in any file browser. The filename tells you the routing number and domain at a glance.
 
 ```protobuf
-// File: Bag_100.proto
+// File: _0100_Bag.proto
 syntax = "proto3";      // always proto3 — the modern protobuf syntax
 package Bag;            // the domain name (PascalCase)
-option module = 100;    // the routing number; must match the _100 in the filename
+option module = 100;    // the routing number; must match the 0100 in the filename
 ```
 
 Line by line:
 
 - `syntax = "proto3";` — declares the modern protobuf syntax. Every file starts with this line.
 - `package Bag;` — this file's domain is "Bag". PascalCase means the first letter is uppercase.
-- `option module = 100;` — assigns routing number 100. **It must equal the `_100` in the filename.**
+- `option module = 100;` — assigns routing number 100. **It must equal the `0100` in the filename.**
 
 Rules:
 
-- Filename: `<Domain>_<ModuleID>.proto`, e.g. `Mail_500.proto`.
-- Positive number = external protocol (client ↔ server); negative = internal (server ↔ server), e.g. `Inner_Social_-120.proto`.
-- Internal files start with `Inner`, e.g. `InnerBasic_2.proto`.
+- Filename: `_<ModuleID:0000>_<Domain>.proto`, e.g. `_0500_Mail.proto`.
+- Positive number = external protocol (client ↔ server); negative = internal (server ↔ server). A negative ID keeps its sign in the filename (`_-0120_Inner_Social.proto` for module -120); the leading `_` on every file keeps names valid (never starting with `-`) and uniformly sorted.
+- Internal files start with `Inner`, e.g. `_0002_InnerBasic.proto`.
 
 **Why** — Putting the module ID in the filename makes the filename itself the routing key: you can tell the domain at a glance, and two files can never quietly share one number. The `Inner` prefix tags internal protocols so they can be filtered out and never leak to the client.
 
@@ -170,7 +170,7 @@ Rules:
 
 When something fails, give it a number so both sides know exactly what went wrong. There are two layers:
 
-**Generic codes** — common failures every module shares (bad parameters, insufficient cost, not found). They live in `Common_20.proto` as `OperationStatusCode`, numbered from `0` upward.
+**Generic codes** — common failures every module shares (bad parameters, insufficient cost, not found). They live in `_0020_Common.proto` as `OperationStatusCode`, numbered from `0` upward.
 
 **Business codes** — failures specific to your module. The number is computed as **`ModuleID × 1000 + a 3-digit ordinal`**.
 
@@ -199,7 +199,7 @@ Comments are the only documentation both sides share — a `.proto` file has no 
 
 ### Full Example
 
-A hypothetical `Quest_600` (quest system) module exercising every rule above:
+A hypothetical `_0600_Quest` (quest system) module exercising every rule above:
 
 ```protobuf
 syntax = "proto3";
@@ -304,7 +304,7 @@ The export tool identifies server-only proto files by **filename suffix** `-s` o
 
 Internal protocols additionally carry a **negative module ID** for routing separation (see the Module ID table above).
 
-> **Note on the current repository:** internal files here use an `Inner_` prefix together with a negative module ID (e.g. `Inner_Social_-120.proto`). Both the `-s`/`_s` suffix and the negative-ID convention achieve server-only routing — pick one and stay consistent within a module.
+> **Note on the current repository:** internal files here use an `Inner_` prefix together with a negative module ID (e.g. `_-0120_Inner_Social.proto`). Both the `-s`/`_s` suffix and the negative-ID convention achieve server-only routing — pick one and stay consistent within a module.
 
 ## Supported Export Languages
 

@@ -37,17 +37,17 @@ GameFrameX.Protobuf 是 GameFrameX 框架的统一网络协议定义仓库。采
 
 | Proto 文件 | 模块 | 说明 |
 |------------|------|------|
-| `InnerBasic_2.proto` | 2 | 内部基础协议 |
-| `Basic_10.proto` | 10 | 基础协议 |
-| `Common_20.proto` | 20 | 通用协议（错误码、共享类型） |
-| `Bag_100.proto` | 100 | 背包协议 |
-| `Social_120.proto` | 120 | 社交协议 |
-| `Inner_Social_-120.proto` | -120 | 内部社交协议（服务端） |
-| `User_300.proto` | 300 | 用户 / 账号协议 |
-| `Attribute_310.proto` | 310 | 玩家属性同步协议 |
-| `Room_400.proto` | 400 | 房间协议 |
-| `RockPaperScissors_410.proto` | 410 | 石头剪刀布小游戏协议 |
-| `Mail_500.proto` | 500 | 邮件系统协议 |
+| `_0002_InnerBasic.proto` | 2 | 内部基础协议 |
+| `_0010_Basic.proto` | 10 | 基础协议 |
+| `_0020_Common.proto` | 20 | 通用协议（错误码、共享类型） |
+| `_0100_Bag.proto` | 100 | 背包协议 |
+| `_0120_Social.proto` | 120 | 社交协议 |
+| `_-0120_Inner_Social.proto` | -120 | 内部社交协议（服务端） |
+| `_0300_User.proto` | 300 | 用户 / 账号协议 |
+| `_0310_Attribute.proto` | 310 | 玩家属性同步协议 |
+| `_0400_Room.proto` | 400 | 房间协议 |
+| `_0410_RockPaperScissors.proto` | 410 | 石头剪刀布小游戏协议 |
+| `_0500_Mail.proto` | 500 | 邮件系统协议 |
 
 ## 协议规范
 
@@ -61,26 +61,26 @@ GameFrameX.Protobuf 是 GameFrameX 框架的统一网络协议定义仓库。采
 
 ### 第 1 步 —— 创建文件
 
-每个业务域放在自己的文件里，文件名叫 `<Domain>_<ModuleID>.proto`。文件名本身就能告诉你这是哪个业务域、路由号是多少。
+每个业务域放在自己的文件里，文件名叫 `_<ModuleID:0000>_<Domain>.proto`——**所有文件名都以 `_` 开头，接 4 位补零的模块 ID**，这样在任何文件管理器里都按模块号数值升序排列，且排序结果与环境无关。文件名一眼就能看出路由号和所属业务域。
 
 ```protobuf
-// 文件名：Bag_100.proto
+// 文件名：_0100_Bag.proto
 syntax = "proto3";      // 永远用 proto3 —— 当前的 protobuf 语法
 package Bag;            // 业务域名（PascalCase）
-option module = 100;    // 路由号；必须和文件名里的 _100 对上
+option module = 100;    // 路由号；必须和文件名里的 0100 对上
 ```
 
 逐行解读：
 
 - `syntax = "proto3";` —— 声明使用当前的 protobuf 语法。每个文件都以此开头。
 - `package Bag;` —— 这个文件的业务域是"Bag"。PascalCase 指首字母大写。
-- `option module = 100;` —— 分配路由号 100。**它必须和文件名里的 `_100` 完全一致。**
+- `option module = 100;` —— 分配路由号 100。**它必须和文件名里的 `0100` 完全一致。**
 
 规则：
 
-- 文件名：`<Domain>_<ModuleID>.proto`，如 `Mail_500.proto`。
-- 正数 = 对外协议（客户端 ↔ 服务端）；负数 = 内部协议（服务端 ↔ 服务端），如 `Inner_Social_-120.proto`。
-- 内部文件以 `Inner` 开头，如 `InnerBasic_2.proto`。
+- 文件名：`_<ModuleID:0000>_<Domain>.proto`，如 `_0500_Mail.proto`。
+- 正数 = 对外协议（客户端 ↔ 服务端）；负数 = 内部协议（服务端 ↔ 服务端）。负数 ID 在文件名里保留负号（`_-0120_Inner_Social.proto` 表示 module = -120）；所有文件名都以 `_` 开头，既保证合法（不以 `-` 开头），又统一排序。
+- 内部文件以 `Inner` 开头，如 `_0002_InnerBasic.proto`。
 
 **为什么** —— 把模块 ID 写进文件名，文件名本身就是路由键：一眼能看出属于哪个业务域，两个文件也绝不可能悄悄占用同一个号。`Inner` 前缀给内部协议打了标记，方便导出时过滤掉，不会泄露给客户端。
 
@@ -170,7 +170,7 @@ enum RoomStatus {
 
 出错时给它一个编号，双方就能准确知道到底哪里错了。错误码分两层：
 
-**通用错误码** —— 各模块都会遇到的常见失败（参数错误、消耗不足、不存在）。它们放在 `Common_20.proto` 的 `OperationStatusCode` 里，从 `0` 往上编号。
+**通用错误码** —— 各模块都会遇到的常见失败（参数错误、消耗不足、不存在）。它们放在 `_0020_Common.proto` 的 `OperationStatusCode` 里，从 `0` 往上编号。
 
 **业务错误码** —— 你这个模块特有的失败。编号按公式算：**`模块 ID × 1000 + 三位序号`**。
 
@@ -199,7 +199,7 @@ enum MailErrorCode {
 
 ### 完整示例
 
-以虚构的 `Quest_600`（任务系统）模块为例，覆盖上述所有规则：
+以虚构的 `_0600_Quest`（任务系统）模块为例，覆盖上述所有规则：
 
 ```protobuf
 syntax = "proto3";
@@ -304,7 +304,7 @@ option module = 10;    // Required: module ID must be defined
 
 内部协议另外使用**负的模块 ID** 实现路由隔离（参见上方模块 ID 表）。
 
-> **关于当前仓库的说明：** 这里的内部文件采用 `Inner_` 前缀加负模块 ID 的写法（如 `Inner_Social_-120.proto`）。`-s`/`_s` 后缀和负 ID 约定都能实现仅服务端路由——选择其中一种，并在一个模块内保持一致。
+> **关于当前仓库的说明：** 这里的内部文件采用 `Inner_` 前缀加负模块 ID 的写法（如 `_-0120_Inner_Social.proto`）。`-s`/`_s` 后缀和负 ID 约定都能实现仅服务端路由——选择其中一种，并在一个模块内保持一致。
 
 ## 支持的导出语言
 

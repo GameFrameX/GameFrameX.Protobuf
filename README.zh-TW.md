@@ -37,17 +37,17 @@ GameFrameX.Protobuf 是 GameFrameX 框架的統一網路協議定義倉庫。採
 
 | Proto 檔案 | 模組 | 說明 |
 |------------|------|------|
-| `InnerBasic_2.proto` | 2 | 內部基礎協議 |
-| `Basic_10.proto` | 10 | 基礎協議 |
-| `Common_20.proto` | 20 | 通用協議（錯誤碼、共享類型） |
-| `Bag_100.proto` | 100 | 背包協議 |
-| `Social_120.proto` | 120 | 社交協議 |
-| `Inner_Social_-120.proto` | -120 | 內部社交協議（伺服器端） |
-| `User_300.proto` | 300 | 使用者 / 帳號協議 |
-| `Attribute_310.proto` | 310 | 玩家屬性同步協議 |
-| `Room_400.proto` | 400 | 房間協議 |
-| `RockPaperScissors_410.proto` | 410 | 猜拳小遊戲協議 |
-| `Mail_500.proto` | 500 | 郵件系統協議 |
+| `_0002_InnerBasic.proto` | 2 | 內部基礎協議 |
+| `_0010_Basic.proto` | 10 | 基礎協議 |
+| `_0020_Common.proto` | 20 | 通用協議（錯誤碼、共享類型） |
+| `_0100_Bag.proto` | 100 | 背包協議 |
+| `_0120_Social.proto` | 120 | 社交協議 |
+| `_-0120_Inner_Social.proto` | -120 | 內部社交協議（伺服器端） |
+| `_0300_User.proto` | 300 | 使用者 / 帳號協議 |
+| `_0310_Attribute.proto` | 310 | 玩家屬性同步協議 |
+| `_0400_Room.proto` | 400 | 房間協議 |
+| `_0410_RockPaperScissors.proto` | 410 | 猜拳小遊戲協議 |
+| `_0500_Mail.proto` | 500 | 郵件系統協議 |
 
 ## 協議規範
 
@@ -61,26 +61,26 @@ GameFrameX.Protobuf 是 GameFrameX 框架的統一網路協議定義倉庫。採
 
 ### 第 1 步 —— 建立檔案
 
-每個業務域放在自己的檔案裡，檔名叫 `<Domain>_<ModuleID>.proto`。檔名本身就能告訴你這是哪個業務域、路由號是多少。
+每個業務域放在自己的檔案裡，檔名叫 `_<ModuleID:0000>_<Domain>.proto`——**所有檔名都以 `_` 開頭，接 4 位補零的模組 ID**，這樣在任何檔案管理器裡都按模組號數值升序排列，且排序結果與環境無關。檔名一眼就能看出路由號和所屬業務域。
 
 ```protobuf
-// 檔名：Bag_100.proto
+// 檔名：_0100_Bag.proto
 syntax = "proto3";      // 永遠用 proto3 —— 當前的 protobuf 語法
 package Bag;            // 業務域名（PascalCase）
-option module = 100;    // 路由號；必須和檔名裡的 _100 對上
+option module = 100;    // 路由號；必須和檔名裡的 0100 對上
 ```
 
 逐行解讀：
 
 - `syntax = "proto3";` —— 宣告使用當前的 protobuf 語法。每個檔案都以此開頭。
 - `package Bag;` —— 這個檔案的業務域是「Bag」。PascalCase 指首字母大寫。
-- `option module = 100;` —— 分配路由號 100。**它必須和檔名裡的 `_100` 完全一致。**
+- `option module = 100;` —— 分配路由號 100。**它必須和檔名裡的 `0100` 完全一致。**
 
 規則：
 
-- 檔名：`<Domain>_<ModuleID>.proto`，如 `Mail_500.proto`。
-- 正數 = 對外協議（客戶端 ↔ 伺服器）；負數 = 內部協議（伺服器 ↔ 伺服器），如 `Inner_Social_-120.proto`。
-- 內部檔案以 `Inner` 開頭，如 `InnerBasic_2.proto`。
+- 檔名：`_<ModuleID:0000>_<Domain>.proto`，如 `_0500_Mail.proto`。
+- 正數 = 對外協議（客戶端 ↔ 伺服器）；負數 = 內部協議（伺服器 ↔ 伺服器）。負數 ID 在檔名裡保留負號（`_-0120_Inner_Social.proto` 表示 module = -120）；所有檔名都以 `_` 開頭，既保證合法（不以 `-` 開頭），又統一排序。
+- 內部檔案以 `Inner` 開頭，如 `_0002_InnerBasic.proto`。
 
 **為什麼** —— 把模組 ID 寫進檔名，檔名本身就是路由鍵：一眼能看出屬於哪個業務域，兩個檔案也絕不可能悄悄佔用同一個號。`Inner` 前綴給內部協議打了標記，方便匯出時過濾掉，不會洩露給客戶端。
 
@@ -170,7 +170,7 @@ enum RoomStatus {
 
 出錯時給它一個編號，雙方就能準確知道到底哪裡錯了。錯誤碼分兩層：
 
-**通用錯誤碼** —— 各模組都會遇到的常見失敗（參數錯誤、消耗不足、不存在）。它們放在 `Common_20.proto` 的 `OperationStatusCode` 裡，從 `0` 往上編號。
+**通用錯誤碼** —— 各模組都會遇到的常見失敗（參數錯誤、消耗不足、不存在）。它們放在 `_0020_Common.proto` 的 `OperationStatusCode` 裡，從 `0` 往上編號。
 
 **業務錯誤碼** —— 你這個模組特有的失敗。編號按公式算：**`模組 ID × 1000 + 三位序號`**。
 
@@ -199,7 +199,7 @@ enum MailErrorCode {
 
 ### 完整範例
 
-以虛構的 `Quest_600`（任務系統）模組為例，涵蓋上述所有規則：
+以虛構的 `_0600_Quest`（任務系統）模組為例，涵蓋上述所有規則：
 
 ```protobuf
 syntax = "proto3";
@@ -304,7 +304,7 @@ option module = 10;    // 必填：必須定義模組 ID
 
 內部協議額外以**負模組 ID** 做路由隔離（見上方的模組 ID 表）。
 
-> **關於當前倉庫的說明：** 這裡的內部檔案使用 `Inner_` 前綴加負模組 ID（如 `Inner_Social_-120.proto`）。`-s`/`_s` 後綴與負 ID 約定都能實現僅伺服器路由——擇一使用，並在同一模組內保持一致。
+> **關於當前倉庫的說明：** 這裡的內部檔案使用 `Inner_` 前綴加負模組 ID（如 `_-0120_Inner_Social.proto`）。`-s`/`_s` 後綴與負 ID 約定都能實現僅伺服器路由——擇一使用，並在同一模組內保持一致。
 
 ## 支援的匯出語言
 
