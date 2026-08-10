@@ -29,7 +29,7 @@ GameFrameX.Protobuf는 GameFrameX 프레임워크의 통일된 네트워크 프�
 
 - **CI(설정 불필요)** —— 모든 `push` 시에 모든 언어로 자동 내보내기하여 롤링 [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)에 게시합니다. 다운로드만 하면 됩니다.
 - **Docker** —— `docker run gameframex/gameframex-tools:latest ...` 한 줄이면 도구 체인 설치가 필요 없습니다.
-- **로컬 스크립트** —— `Tools/ProtoExport`(.NET 10)를 한 번 빌드한 뒤 `Proto2*Export.sh/.bat` 스크립트를 실행합니다.
+- **로컬 스크립트** —— `Tools/ProtoExport`(.NET 10)를 직접 빌드하여 빌드 산출물을 이 리포지토리의 `Tools/` 디렉터리에 넣은 뒤 `Proto2*Export.sh/.bat` 스크립트를 실행합니다.
 
 전체 문서는 [GameFrameX 문서 사이트](https://gameframex.doc.alianblank.com/protobuf/require)에서 제공됩니다.
 
@@ -453,7 +453,7 @@ docker run --rm \
 코드 생성은 `ProtoExport` 생성기를 제공하는 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) 를 사용합니다.
 
 - **Docker / CI** —— 설정 불필요. 사전 빌드된 이미지에 모든 것이 포함되어 있습니다.
-- **로컬 스크립트** —— `Proto2*Export.sh/.bat` 스크립트를 실행하기 전에 해당 리포지토리에서 `Tools/ProtoExport` 프로젝트를 빌드해야 합니다(.NET 10 SDK 필요).
+- **로컬 스크립트** —— `Tools/ProtoExport` 프로젝트를 직접 빌드하고(.NET 10 SDK 필요), 빌드 산출물(`ProtoExport.dll`, `ProtoExport.deps.json`, `ProtoExport.runtimeconfig.json`, `GameFrameX.Foundation.Options.dll` 등)을 이 리포지토리의 `Tools/` 디렉터리에 복사합니다. 스크립트는 `dotnet ./Tools/ProtoExport.dll`로 호출합니다. 아래 [빠른 시작](#빠른-시작)을 참조하세요.
 
 ## 빠른 시작
 
@@ -470,23 +470,22 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**옵션 C — 로컬 스크립트**(`Tools/ProtoExport` 빌드 필요):
+**옵션 C — 로컬 스크립트**(`Tools/ProtoExport`를 직접 빌드하여 산출물을 `Tools/`에 넣어야 합니다):
 
 ```bash
+# 1. 도구를 클론하고 빌드 (.NET 10 SDK 필요)
+git clone https://github.com/GameFrameX/GameFrameX.Tools.git
+cd GameFrameX.Tools/ProtoExport
+dotnet build -c Release
+
+# 2. 빌드 산출물을 이 리포지토리의 Tools/ 디렉터리로 복사
+mkdir -p /path/to/GameFrameX.Protobuf/Tools
+cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
+
+# 3. Protobuf 리포지토리 루트에서 내보내기 스크립트 실행
+cd /path/to/GameFrameX.Protobuf
 ./Proto2CsExport_Server.sh   # C# (서버)
 ./Proto2GoExport.sh          # Go
 ```
 
-각 스크립트는 `Tools/ProtoExport` 출력 디렉터리로 이동한 뒤, 언어별 옵션(`--mode`, `--isServer`, `--isGenerateDescription`, `--isGenerateErrorCode` 등)을 지정해 `dotnet ProtoExport.dll`을 호출합니다. 자세한 내용은 [내보내기 문서](https://gameframex.doc.alianblank.com/protobuf/require)를 참조하세요.
-
-## 문서
-
-- [프로토콜 사양](https://gameframex.doc.alianblank.com/protobuf/require)
-- [GameFrameX 문서](https://gameframex.doc.alianblank.com)
-- [GameFrameX.Tools(내보내기 도구)](https://github.com/GameFrameX/GameFrameX.Tools)
-- [GitHub 리포지토리](https://github.com/GameFrameX/GameFrameX.Protobuf)
-- [이슈 트래커](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
-
-## 라이선스
-
-이 프로젝트는 [Apache License 2.0](LICENSE.md)로 제공됩니다.
+각 스크립트는 리포지토리 루트에서 실행되며, `Tools/`에 넣은 생성기를 `dotnet ./Tools/ProtoExport.dll`로 호출하고 언어별 옵션(`--mode`, `--isServer`, `--isGenerateDescription`, `--isGenerateErrorCode` 등)으로 코드를 내보냅니다. 자세한 내용은 [내보내기 문서](https://gameframex.doc.alianblank.com/protobuf/require)를 참조하세요.

@@ -29,7 +29,7 @@ GameFrameX.Protobuf は、GameFrameX フレームワークの統一ネットワ�
 
 - **CI（セットアップ不要）** —— 各 `push` で全言語を自動エクスポートし、ローリングの [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) に公開します。ダウンロードするだけ。
 - **Docker** —— `docker run gameframex/gameframex-tools:latest ...`、ツールチェーンのインストール不要。
-- **ローカルスクリプト** —— `Tools/ProtoExport`（.NET 10）を一度ビルドし、`Proto2*Export.sh/.bat` スクリプトを実行。
+- **ローカルスクリプト** —— `Tools/ProtoExport`（.NET 10）を自身でビルドし、ビルド成果物を本リポジトリの `Tools/` ディレクトリに配置してから `Proto2*Export.sh/.bat` スクリプトを実行します。
 
 完全なドキュメントは [GameFrameX ドキュメントサイト](https://gameframex.doc.alianblank.com/protobuf/require) で公開されています。
 
@@ -453,7 +453,7 @@ docker run --rm \
 コード生成は [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) を使用します。同リポジトリが `ProtoExport` ジェネレータを提供します。
 
 - **Docker / CI** —— セットアップ不要。ビルド済みイメージにすべて含まれます。
-- **ローカルスクリプト** —— `Proto2*Export.sh/.bat` スクリプトを実行する前に、当該リポジトリから `Tools/ProtoExport` プロジェクトをビルドしてください（.NET 10 SDK が必要）。
+- **ローカルスクリプト** —— `Tools/ProtoExport` プロジェクトを自身でビルドし（.NET 10 SDK 必須）、ビルド成果物（`ProtoExport.dll`、`ProtoExport.deps.json`、`ProtoExport.runtimeconfig.json`、`GameFrameX.Foundation.Options.dll` など）を本リポジトリの `Tools/` ディレクトリに配置します。スクリプトは `dotnet ./Tools/ProtoExport.dll` で呼び出します。詳しくは下記[クイックスタート](#クイックスタート)を参照。
 
 ## クイックスタート
 
@@ -470,23 +470,22 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**オプション C —— ローカルスクリプト**（`Tools/ProtoExport` のビルドが必要）:
+**オプション C —— ローカルスクリプト**（`Tools/ProtoExport` を自身でビルドし、成果物を `Tools/` に配置する必要があります）:
 
 ```bash
-./Proto2CsExport_Server.sh   # C# (server)
+# 1. ツールをクローンしてビルド（.NET 10 SDK 必須）
+git clone https://github.com/GameFrameX/GameFrameX.Tools.git
+cd GameFrameX.Tools/ProtoExport
+dotnet build -c Release
+
+# 2. ビルド成果物を本リポジトリの Tools/ にコピー
+mkdir -p /path/to/GameFrameX.Protobuf/Tools
+cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
+
+# 3. Protobuf リポジトリのルートでエクスポートスクリプトを実行
+cd /path/to/GameFrameX.Protobuf
+./Proto2CsExport_Server.sh   # C#（サーバー）
 ./Proto2GoExport.sh          # Go
 ```
 
-各スクリプトは `Tools/ProtoExport` の出力ディレクトリに移動し、言語固有のオプション（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` など）を指定して `dotnet ProtoExport.dll` を呼び出します。詳しくは[エクスポートドキュメント](https://gameframex.doc.alianblank.com/protobuf/require)を参照してください。
-
-## ドキュメント
-
-- [プロトコル仕様](https://gameframex.doc.alianblank.com/protobuf/require)
-- [GameFrameX ドキュメント](https://gameframex.doc.alianblank.com)
-- [GameFrameX.Tools（エクスポートツール）](https://github.com/GameFrameX/GameFrameX.Tools)
-- [GitHub リポジトリ](https://github.com/GameFrameX/GameFrameX.Protobuf)
-- [Issue トラッカー](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
-
-## ライセンス
-
-このプロジェクトは [Apache License 2.0](LICENSE.md) のもとで提供されます。
+各スクリプトはリポジトリルートから実行され、`Tools/` に配置したジェネレータを `dotnet ./Tools/ProtoExport.dll` で呼び出し、言語固有のオプション（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` など）を指定してコードを生成します。詳しくは[エクスポートドキュメント](https://gameframex.doc.alianblank.com/protobuf/require)を参照してください。

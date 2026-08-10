@@ -29,7 +29,7 @@ GameFrameX.Protobuf 是 GameFrameX 框架的统一网络协议定义仓库。采
 
 - **CI（零配置）** —— 每次 `push` 都会自动导出全部语言并发布到滚动更新的 [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)，直接下载即可。
 - **Docker** —— `docker run gameframex/gameframex-tools:latest ...`，无需本地工具链。
-- **本地脚本** —— 先构建一次 `Tools/ProtoExport`（.NET 10），再运行 `Proto2*Export.sh/.bat` 脚本。
+- **本地脚本** —— 自行构建 `Tools/ProtoExport`（.NET 10），把编译产物复制到本仓库的 `Tools/` 目录后，运行 `Proto2*Export.sh/.bat` 脚本。
 
 完整文档托管在 [GameFrameX 文档站](https://gameframex.doc.alianblank.com/protobuf/require)。
 
@@ -453,7 +453,7 @@ docker run --rm \
 代码生成使用 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)，它提供 `ProtoExport` 生成器。
 
 - **Docker / CI** —— 无需任何配置；预构建镜像已包含全部依赖。
-- **本地脚本** —— 运行任何 `Proto2*Export.sh/.bat` 脚本前，需先从该仓库构建 `Tools/ProtoExport` 项目（需要 .NET 10 SDK）。
+- **本地脚本** —— 自行构建 `Tools/ProtoExport` 项目（需要 .NET 10 SDK），把编译产物（`ProtoExport.dll`、`ProtoExport.deps.json`、`ProtoExport.runtimeconfig.json`、`GameFrameX.Foundation.Options.dll` 等）复制到本仓库的 `Tools/` 目录；脚本通过 `dotnet ./Tools/ProtoExport.dll` 调用。详见下方[快速开始](#快速开始)。
 
 ## 快速开始
 
@@ -470,23 +470,22 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**方案 C —— 本地脚本**（需要先构建 `Tools/ProtoExport`）：
+**方案 C —— 本地脚本**（需自行构建 `Tools/ProtoExport` 并把产物放入 `Tools/` 目录）：
 
 ```bash
+# 1. 克隆并构建工具（需要 .NET 10 SDK）
+git clone https://github.com/GameFrameX/GameFrameX.Tools.git
+cd GameFrameX.Tools/ProtoExport
+dotnet build -c Release
+
+# 2. 把编译产物复制到本仓库的 Tools/ 目录
+mkdir -p /path/to/GameFrameX.Protobuf/Tools
+cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
+
+# 3. 在 Protobuf 仓库根目录运行导出脚本
+cd /path/to/GameFrameX.Protobuf
 ./Proto2CsExport_Server.sh   # C#（服务端）
 ./Proto2GoExport.sh          # Go
 ```
 
-每个脚本会切换到 `Tools/ProtoExport` 输出目录，并以语言相关参数（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` 等）调用 `dotnet ProtoExport.dll`。详见[导出文档](https://gameframex.doc.alianblank.com/protobuf/require)。
-
-## 文档
-
-- [协议规范](https://gameframex.doc.alianblank.com/protobuf/require)
-- [GameFrameX 文档](https://gameframex.doc.alianblank.com)
-- [GameFrameX.Tools（导出工具）](https://github.com/GameFrameX/GameFrameX.Tools)
-- [GitHub 仓库](https://github.com/GameFrameX/GameFrameX.Protobuf)
-- [Issue 跟踪](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
-
-## 开源协议
-
-本项目采用 [Apache 2.0 协议](LICENSE.md) 授权。
+每个脚本在仓库根目录下通过 `dotnet ./Tools/ProtoExport.dll` 调用已放入 `Tools/` 的生成器，并以语言相关参数（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` 等）导出代码。详见[导出文档](https://gameframex.doc.alianblank.com/protobuf/require)。

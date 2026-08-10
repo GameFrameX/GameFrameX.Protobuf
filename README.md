@@ -29,7 +29,7 @@ Code generation is driven by the [GameFrameX.Tools `ProtoExport`](https://github
 
 - **CI (zero setup)** — every `push` auto-exports all languages and publishes to the rolling [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest). Just download.
 - **Docker** — `docker run gameframex/gameframex-tools:latest ...`, no toolchain to install.
-- **Local scripts** — build `Tools/ProtoExport` (.NET 10) once, then run the `Proto2*Export.sh/.bat` scripts.
+- **Local scripts** — build `Tools/ProtoExport` (.NET 10) yourself, copy the build output into this repo's `Tools/` directory, then run the `Proto2*Export.sh/.bat` scripts.
 
 Full documentation is hosted at the [GameFrameX documentation site](https://gameframex.doc.alianblank.com/protobuf/require).
 
@@ -453,7 +453,7 @@ Download the latest generated code from the [Releases page](https://github.com/G
 Code generation uses [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools), which provides the `ProtoExport` generator.
 
 - **Docker / CI** — no setup needed; the pre-built image contains everything.
-- **Local scripts** — build the `Tools/ProtoExport` project from that repository (requires the .NET 10 SDK) before running any `Proto2*Export.sh/.bat` script.
+- **Local scripts** — build the `Tools/ProtoExport` project yourself (requires the .NET 10 SDK), copy the build output (`ProtoExport.dll`, `ProtoExport.deps.json`, `ProtoExport.runtimeconfig.json`, `GameFrameX.Foundation.Options.dll`, etc.) into this repo's `Tools/` directory; each script invokes it via `dotnet ./Tools/ProtoExport.dll`. See [Quick Start](#quick-start) below.
 
 ## Quick Start
 
@@ -470,23 +470,22 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**Option C — Local scripts** (requires a built `Tools/ProtoExport`):
+**Option C — Local scripts** (build `Tools/ProtoExport` yourself and place the output into `Tools/`):
 
 ```bash
+# 1. Clone and build the tool (requires .NET 10 SDK)
+git clone https://github.com/GameFrameX/GameFrameX.Tools.git
+cd GameFrameX.Tools/ProtoExport
+dotnet build -c Release
+
+# 2. Copy the build output into this repo's Tools/ directory
+mkdir -p /path/to/GameFrameX.Protobuf/Tools
+cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
+
+# 3. Run an export script from the Protobuf repo root
+cd /path/to/GameFrameX.Protobuf
 ./Proto2CsExport_Server.sh   # C# (server)
 ./Proto2GoExport.sh          # Go
 ```
 
-Each script switches into the `Tools/ProtoExport` output directory and invokes `dotnet ProtoExport.dll` with language-specific options (`--mode`, `--isServer`, `--isGenerateDescription`, `--isGenerateErrorCode`, etc.). See the [export documentation](https://gameframex.doc.alianblank.com/protobuf/require) for details.
-
-## Documentation
-
-- [Protocol Specification](https://gameframex.doc.alianblank.com/protobuf/require)
-- [GameFrameX Documentation](https://gameframex.doc.alianblank.com)
-- [GameFrameX.Tools (export tool)](https://github.com/GameFrameX/GameFrameX.Tools)
-- [GitHub Repository](https://github.com/GameFrameX/GameFrameX.Protobuf)
-- [Issue Tracker](https://github.com/GameFrameX/GameFrameX.Protobuf/issues)
-
-## License
-
-This project is licensed under the [Apache License 2.0](LICENSE.md).
+Each script runs from the repo root and invokes the generator you placed in `Tools/` via `dotnet ./Tools/ProtoExport.dll`, with language-specific options (`--mode`, `--isServer`, `--isGenerateDescription`, `--isGenerateErrorCode`, etc.). See the [export documentation](https://gameframex.doc.alianblank.com/protobuf/require) for details.
