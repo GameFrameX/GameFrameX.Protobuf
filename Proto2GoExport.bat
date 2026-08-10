@@ -1,4 +1,3 @@
-cd /d ../Tools/ProtoExport\bin\Debug\net8.0
-call dotnet ProtoExport.dll --mode go --inputPath ./../../../../../Protobuf --outputPath ./../../../../../GoServer/proto --namespaceName proto --isGenerateErrorCode true
+.\Tools\win-x64\ProtoExport.exe  --mode go --inputPath ./ --outputPath ../GoServer/proto --namespaceName proto --isGenerateErrorCode true
 
 pause

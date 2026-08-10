@@ -1,7 +1,11 @@
 #!/bin/bash
-
-# 切换目录，-P 选项是用来处理符号链接的
-cd -P ../Tools/ProtoExport/bin/Debug/net10.0
-
-# 启动应用程序
-dotnet ProtoExport.dll --mode typescript --inputPath ./../../../../../Protobuf --outputPath ./../../../../../Laya/src/gameframex/protobuf --isGenerateErrorCode true
+cd "$(dirname "$0")" || exit 1
+# 自动选择对应平台的 ProtoExport 预编译二进制（self-contained，无需安装 .NET）
+case "$(uname -s)-$(uname -m)" in
+  Darwin-arm64) PROTO_EXPORT_BIN=./Tools/osx-arm64/ProtoExport;;
+  Darwin-*)     PROTO_EXPORT_BIN=./Tools/osx-x64/ProtoExport;;
+  *) echo "[ERROR] 暂仅提供 macOS (arm64/x64) 与 Windows 预编译二进制"; exit 1;;
+esac
+xattr -cr "$PROTO_EXPORT_BIN" 2>/dev/null  # 清除 macOS quarantine 标记
+chmod +x "$PROTO_EXPORT_BIN"
+"$PROTO_EXPORT_BIN"  --mode typescript --inputPath ./ --outputPath ../Laya/src/gameframex/protobuf --isGenerateErrorCode true
