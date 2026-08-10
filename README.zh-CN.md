@@ -29,7 +29,7 @@ GameFrameX.Protobuf 是 GameFrameX 框架的统一网络协议定义仓库。采
 
 - **CI（零配置）** —— 每次 `push` 都会自动导出全部语言并发布到滚动更新的 [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)，直接下载即可。
 - **Docker** —— `docker run gameframex/gameframex-tools:latest ...`，无需本地工具链。
-- **本地脚本** —— 自行构建 `Tools/ProtoExport`（.NET 10），把编译产物复制到本仓库的 `Tools/` 目录后，运行 `Proto2*Export.sh/.bat` 脚本。
+- **本地脚本** —— 自行构建 `Tools/ProtoExport`（.NET 10），把产物放入本仓库的 `Tools/` 目录后运行 `Proto2*Export.sh/.bat`。详见[导出工具](#导出工具)。
 
 完整文档托管在 [GameFrameX 文档站](https://gameframex.doc.alianblank.com/protobuf/require)。
 
@@ -448,12 +448,90 @@ docker run --rm \
 
 在 [Releases 页面](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) 下载最新生成的代码——无需任何工具链。
 
-## 依赖
+## 导出工具
 
-代码生成使用 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)，它提供 `ProtoExport` 生成器。
+本仓库的代码生成由独立的 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) 仓库中的 `ProtoExport` 工具驱动（一个 .NET 10 控制台程序）。**本仓库不内置该二进制**——从三种工作流中任选其一（见[快速开始](#快速开始)）：
 
-- **Docker / CI** —— 无需任何配置；预构建镜像已包含全部依赖。
-- **本地脚本** —— 自行构建 `Tools/ProtoExport` 项目（需要 .NET 10 SDK），把编译产物（`ProtoExport.dll`、`ProtoExport.deps.json`、`ProtoExport.runtimeconfig.json`、`GameFrameX.Foundation.Options.dll` 等）复制到本仓库的 `Tools/` 目录；脚本通过 `dotnet ./Tools/ProtoExport.dll` 调用。详见下方[快速开始](#快速开始)。
+- **CI** —— 零配置，直接从最新 Release 下载生成代码。
+- **Docker** —— 运行预构建镜像，无需本地工具链。
+- **本地脚本** —— 自行构建工具，把产物放入本仓库的 `Tools/` 目录（完整步骤见下文）。
+
+### 工具仓库
+
+| 项目 | 仓库地址 | 说明 |
+|------|----------|------|
+| GameFrameX.Tools | https://github.com/GameFrameX/GameFrameX.Tools | `ProtoExport` 生成器源码、完整参数文档、Docker 镜像 |
+
+`ProtoExport` 是一个 .NET 10 控制台项目（`ProtoExport.csproj`，`OutputType=Exe`），依赖 NuGet 包 `GameFrameX.Foundation.Options` 做命令行参数解析。
+
+### 环境要求
+
+- **.NET 10 SDK** —— 构建工具和运行导出脚本都需要它。
+- 验证：`dotnet --version` 应输出 `10.x.x`。
+
+### 构建
+
+```bash
+# 1. 克隆工具仓库
+git clone https://github.com/GameFrameX/GameFrameX.Tools.git
+cd GameFrameX.Tools/ProtoExport
+
+# 2. 构建（Release）
+dotnet build -c Release
+
+# 3. 产物在 bin/Release/net10.0/
+ls bin/Release/net10.0/
+```
+
+### 构建产物
+
+把以下文件从 `GameFrameX.Tools/ProtoExport/bin/Release/net10.0/` 复制到本仓库的 `Tools/` 目录：
+
+| 文件 | 必需 | 作用 |
+|------|:----:|------|
+| `ProtoExport.dll` | ✅ | 主程序集 |
+| `ProtoExport.deps.json` | ✅ | 依赖描述（运行时必需） |
+| `ProtoExport.runtimeconfig.json` | ✅ | 运行时配置（指定 .NET 10） |
+| `GameFrameX.Foundation.Options.dll` | ✅ | 命令行参数解析依赖 |
+| `ProtoExport` / `ProtoExport.exe` | ⛔ | 原生启动器，脚本不使用 |
+| `ProtoExport.pdb` | ⛔ | 调试符号 |
+
+```bash
+# 把四个必需文件复制到本仓库的 Tools/ 目录
+cp bin/Release/net10.0/ProtoExport.dll                   /path/to/GameFrameX.Protobuf/Tools/
+cp bin/Release/net10.0/ProtoExport.deps.json             /path/to/GameFrameX.Protobuf/Tools/
+cp bin/Release/net10.0/ProtoExport.runtimeconfig.json    /path/to/GameFrameX.Protobuf/Tools/
+cp bin/Release/net10.0/GameFrameX.Foundation.Options.dll /path/to/GameFrameX.Protobuf/Tools/
+
+# 或一键复制全部产物
+cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
+```
+
+> 原生启动器（macOS/Linux 的 `ProtoExport`、Windows 的 `ProtoExport.exe`）可选——所有 `Proto2*` 脚本统一通过 `dotnet ./Tools/ProtoExport.dll` 启动工具，跨平台一致。
+
+### 验证
+
+```bash
+cd /path/to/GameFrameX.Protobuf
+./Proto2CsExport_Client.sh    # macOS / Linux
+Proto2CsExport_Client.bat     # Windows
+```
+
+看到 `协议扫描完成: ... 导出 N 个，跳过 M 个` 即表示工具就绪。
+
+### 与导出脚本的关系
+
+仓库根目录的每个 `Proto2*.sh` / `.bat` 脚本都会：
+
+1. 从仓库根目录运行；
+2. 通过 `dotnet ./Tools/ProtoExport.dll` 启动你放入 `Tools/` 的生成器；
+3. 传入对应语言的参数（`--mode`、`--isServer` 等）。
+
+因此**只要 `Tools/` 下有正确的产物，所有脚本即可直接运行**——无需关心各脚本的参数细节。
+
+### 更新工具
+
+`ProtoExport` 上游迭代后，重新执行「构建 + 复制产物」覆盖 `Tools/` 下的旧文件即可。建议把工具版本与本仓库协议规范保持同步——拉取本仓库最新变更时一并重建工具。
 
 ## 快速开始
 
@@ -470,22 +548,11 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**方案 C —— 本地脚本**（需自行构建 `Tools/ProtoExport` 并把产物放入 `Tools/` 目录）：
+**方案 C —— 本地脚本：** 自行构建工具并放入 `Tools/`（完整步骤见[导出工具](#导出工具)），然后在仓库根目录运行：
 
 ```bash
-# 1. 克隆并构建工具（需要 .NET 10 SDK）
-git clone https://github.com/GameFrameX/GameFrameX.Tools.git
-cd GameFrameX.Tools/ProtoExport
-dotnet build -c Release
-
-# 2. 把编译产物复制到本仓库的 Tools/ 目录
-mkdir -p /path/to/GameFrameX.Protobuf/Tools
-cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
-
-# 3. 在 Protobuf 仓库根目录运行导出脚本
-cd /path/to/GameFrameX.Protobuf
 ./Proto2CsExport_Server.sh   # C#（服务端）
 ./Proto2GoExport.sh          # Go
 ```
 
-每个脚本在仓库根目录下通过 `dotnet ./Tools/ProtoExport.dll` 调用已放入 `Tools/` 的生成器，并以语言相关参数（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` 等）导出代码。详见[导出文档](https://gameframex.doc.alianblank.com/protobuf/require)。
+所有脚本通过 `dotnet ./Tools/ProtoExport.dll` 调用 `Tools/` 下的生成器；参数细节见[导出文档](https://gameframex.doc.alianblank.com/protobuf/require)。

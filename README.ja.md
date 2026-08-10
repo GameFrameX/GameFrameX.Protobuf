@@ -29,7 +29,7 @@ GameFrameX.Protobuf は、GameFrameX フレームワークの統一ネットワ�
 
 - **CI（セットアップ不要）** —— 各 `push` で全言語を自動エクスポートし、ローリングの [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) に公開します。ダウンロードするだけ。
 - **Docker** —— `docker run gameframex/gameframex-tools:latest ...`、ツールチェーンのインストール不要。
-- **ローカルスクリプト** —— `Tools/ProtoExport`（.NET 10）を自身でビルドし、ビルド成果物を本リポジトリの `Tools/` ディレクトリに配置してから `Proto2*Export.sh/.bat` スクリプトを実行します。
+- **ローカルスクリプト** —— `Tools/ProtoExport`（.NET 10）を自身でビルドし、成果物を本リポジトリの `Tools/` ディレクトリに配置してから `Proto2*Export.sh/.bat` を実行します。詳しくは[エクスポートツール](#エクスポートツール)を参照。
 
 完全なドキュメントは [GameFrameX ドキュメントサイト](https://gameframex.doc.alianblank.com/protobuf/require) で公開されています。
 
@@ -448,12 +448,90 @@ docker run --rm \
 
 最新の生成コードは [Releases ページ](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)からダウンロードできます——ツールチェーン不要。
 
-## 依存関係
+## エクスポートツール
 
-コード生成は [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) を使用します。同リポジトリが `ProtoExport` ジェネレータを提供します。
+本リポジトリのコード生成は、独立リポジトリ [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) の `ProtoExport` ツール（.NET 10 コンソールアプリ）が駆動します。**本リポジトリはバイナリを同梱しません**——3 つのワークフローから選んでください（[クイックスタート](#クイックスタート)参照）:
 
-- **Docker / CI** —— セットアップ不要。ビルド済みイメージにすべて含まれます。
-- **ローカルスクリプト** —— `Tools/ProtoExport` プロジェクトを自身でビルドし（.NET 10 SDK 必須）、ビルド成果物（`ProtoExport.dll`、`ProtoExport.deps.json`、`ProtoExport.runtimeconfig.json`、`GameFrameX.Foundation.Options.dll` など）を本リポジトリの `Tools/` ディレクトリに配置します。スクリプトは `dotnet ./Tools/ProtoExport.dll` で呼び出します。詳しくは下記[クイックスタート](#クイックスタート)を参照。
+- **CI** —— セットアップ不要。最新 Release から生成コードをダウンロードするだけ。
+- **Docker** —— プリビルドイメージを実行。ローカルツールチェーン不要。
+- **ローカルスクリプト** —— ツールを自身でビルドし、成果物を本リポジトリの `Tools/` ディレクトリに配置します（手順は下記）。
+
+### ツールリポジトリ
+
+| プロジェクト | リポジトリ | 説明 |
+|--------------|-----------|------|
+| GameFrameX.Tools | https://github.com/GameFrameX/GameFrameX.Tools | `ProtoExport` 生成器のソース、完全なパラメータ文档、Docker イメージ |
+
+`ProtoExport` は .NET 10 コンソールプロジェクト（`ProtoExport.csproj`、`OutputType=Exe`）で、コマンドライン解析に NuGet パッケージ `GameFrameX.Foundation.Options` に依存します。
+
+### 前提条件
+
+- **.NET 10 SDK** —— ツールのビルドとエクスポートスクリプトの実行の両方に必要です。
+- 確認: `dotnet --version` が `10.x.x` を出力すること。
+
+### ビルド
+
+```bash
+# 1. ツールリポジトリをクローン
+git clone https://github.com/GameFrameX/GameFrameX.Tools.git
+cd GameFrameX.Tools/ProtoExport
+
+# 2. ビルド（Release）
+dotnet build -c Release
+
+# 3. 成果物は bin/Release/net10.0/ に出力
+ls bin/Release/net10.0/
+```
+
+### ビルド成果物
+
+`GameFrameX.Tools/ProtoExport/bin/Release/net10.0/` から以下のファイルを本リポジトリの `Tools/` ディレクトリへコピーします:
+
+| ファイル | 必須 | 目的 |
+|----------|:----:|------|
+| `ProtoExport.dll` | ✅ | メインアセンブリ |
+| `ProtoExport.deps.json` | ✅ | 依存関係マニフェスト（実行時に必要） |
+| `ProtoExport.runtimeconfig.json` | ✅ | ランタイム設定（.NET 10 を指定） |
+| `GameFrameX.Foundation.Options.dll` | ✅ | コマンドライン解析の依存 |
+| `ProtoExport` / `ProtoExport.exe` | ⛔ | ネイティブ apphost——スクリプトは不使用 |
+| `ProtoExport.pdb` | ⛔ | デバッグシンボル |
+
+```bash
+# 必須 4 ファイルを本リポジトリの Tools/ にコピー
+cp bin/Release/net10.0/ProtoExport.dll                   /path/to/GameFrameX.Protobuf/Tools/
+cp bin/Release/net10.0/ProtoExport.deps.json             /path/to/GameFrameX.Protobuf/Tools/
+cp bin/Release/net10.0/ProtoExport.runtimeconfig.json    /path/to/GameFrameX.Protobuf/Tools/
+cp bin/Release/net10.0/GameFrameX.Foundation.Options.dll /path/to/GameFrameX.Protobuf/Tools/
+
+# または全成果物を一括コピー
+cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
+```
+
+> ネイティブ起動子（macOS/Linux の `ProtoExport`、Windows の `ProtoExport.exe`）は任意です——すべての `Proto2*` スクリプトは `dotnet ./Tools/ProtoExport.dll` でツールを起動するため、クロスプラットフォームで一貫します。
+
+### 検証
+
+```bash
+cd /path/to/GameFrameX.Protobuf
+./Proto2CsExport_Client.sh    # macOS / Linux
+Proto2CsExport_Client.bat     # Windows
+```
+
+`协议扫描完成: ... 导出 N 个，跳过 M 个` のような行が表示されればツールは準備完了です。
+
+### エクスポートスクリプトとの関係
+
+リポジトリルートの各 `Proto2*.sh` / `.bat` スクリプトは:
+
+1. リポジトリルートから実行され;
+2. `Tools/` に配置した生成器を `dotnet ./Tools/ProtoExport.dll` で起動し;
+3. 言語固有のフラグ（`--mode`、`--isServer` など）を渡します。
+
+したがって `Tools/` に正しい成果物があれば、**全スクリプトがそのまま実行できます**——言語ごとのパラメータを手動で触る必要はありません。
+
+### ツールの更新
+
+`ProtoExport` が上流で更新されたら、「ビルド + 成果物コピー」を再実行して `Tools/` のファイルを上書きします。ツールのバージョンを本リポジトリのプロトコル規約と同期させてください——本リポジトリの最新変更を取得する際にツールも合わせて再ビルドすることを推奨します。
 
 ## クイックスタート
 
@@ -470,22 +548,11 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**オプション C —— ローカルスクリプト**（`Tools/ProtoExport` を自身でビルドし、成果物を `Tools/` に配置する必要があります）:
+**オプション C —— ローカルスクリプト:** ツールを自身でビルドして `Tools/` に配置し（手順は[エクスポートツール](#エクスポートツール)を参照）、リポジトリルートから実行します:
 
 ```bash
-# 1. ツールをクローンしてビルド（.NET 10 SDK 必須）
-git clone https://github.com/GameFrameX/GameFrameX.Tools.git
-cd GameFrameX.Tools/ProtoExport
-dotnet build -c Release
-
-# 2. ビルド成果物を本リポジトリの Tools/ にコピー
-mkdir -p /path/to/GameFrameX.Protobuf/Tools
-cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
-
-# 3. Protobuf リポジトリのルートでエクスポートスクリプトを実行
-cd /path/to/GameFrameX.Protobuf
 ./Proto2CsExport_Server.sh   # C#（サーバー）
 ./Proto2GoExport.sh          # Go
 ```
 
-各スクリプトはリポジトリルートから実行され、`Tools/` に配置したジェネレータを `dotnet ./Tools/ProtoExport.dll` で呼び出し、言語固有のオプション（`--mode`、`--isServer`、`--isGenerateDescription`、`--isGenerateErrorCode` など）を指定してコードを生成します。詳しくは[エクスポートドキュメント](https://gameframex.doc.alianblank.com/protobuf/require)を参照してください。
+各スクリプトは `dotnet ./Tools/ProtoExport.dll` で `Tools/` の生成器を呼び出します。パラメータの詳細は[エクスポート文档](https://gameframex.doc.alianblank.com/protobuf/require)を参照してください。
