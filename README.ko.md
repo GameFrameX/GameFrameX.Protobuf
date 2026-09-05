@@ -29,7 +29,7 @@ GameFrameX.Protobuf는 GameFrameX 프레임워크의 통일된 네트워크 프�
 
 - **CI(설정 불필요)** —— 모든 `push` 시에 모든 언어로 자동 내보내기하여 롤링 [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)에 게시합니다. 다운로드만 하면 됩니다.
 - **Docker** —— `docker run gameframex/gameframex-tools:latest ...` 한 줄이면 도구 체인 설치가 필요 없습니다.
-- **로컬 스크립트** —— `Tools/ProtoExport`(.NET 10)를 직접 빌드하여 산출물을 이 리포지토리의 `Tools/` 디렉터리에 넣은 뒤 `Proto2*Export.sh/.bat` 스크립트를 실행합니다. 자세한 내용은 [내보내기 도구](#내보내기-도구)를 참조하세요.
+- **로컬 스크립트** —— `Tools/` 디렉터리의 `ProtoExport` 산출물은 워크플로가 매주 자동 동기화합니다. 클론 후 `Proto2*Export.sh/.bat`를 바로 실행하면 됩니다. 자세한 내용은 [내보내기 도구](#내보내기-도구)를 참조하세요.
 
 전체 문서는 [GameFrameX 문서 사이트](https://gameframex.doc.alianblank.com/protobuf/require)에서 제공됩니다.
 
@@ -450,11 +450,11 @@ docker run --rm \
 
 ## 내보내기 도구
 
-이 리포지토리의 코드 생성은 독립 리포지토리 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)의 `ProtoExport` 도구(.NET 10 콘솔 앱)가 담당합니다. **이 리포지토리는 바이너리를 포함하지 않습니다**——세 가지 워크플로 중 하나를 선택하세요([빠른 시작](#빠른-시작) 참조):
+이 리포지토리의 코드 생성은 독립 리포지토리 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools)의 `ProtoExport` 도구(.NET 10 콘솔 앱)가 담당합니다. **`Tools/` 디렉터리에 도구 바이너리 산출물을 내장하며 워크플로가 매주 자동 동기화합니다**——클론 후 바로 로컬 스크립트를 실행할 수 있고 직접 빌드할 필요가 없습니다([빠른 시작](#빠른-시작) 참조):
 
 - **CI** —— 설정 불필요. 최신 Release에서 생성된 코드를 다운로드하기만 하면 됩니다.
 - **Docker** —— 사전 빌드된 이미지 실행. 로컬 도구 체인 불필요.
-- **로컬 스크립트** —— 도구를 직접 빌드하여 산출물을 이 리포지토리의 `Tools/` 디렉터리에 넣습니다(절차는 아래).
+- **로컬 스크립트** —— 매주 자동 동기화된 `Tools/`의 산출물을 그대로 사용합니다. 즉시 갱신이 필요하면 동기화 워크플로를 수동 실행하거나 직접 빌드하여 덮어씁니다(아래 참조).
 
 ### 도구 리포지토리
 
@@ -466,26 +466,29 @@ docker run --rm \
 
 ### 사전 요구 사항
 
-- **.NET 10 SDK** —— 도구 빌드와 내보내기 스크립트 실행 모두에 필요합니다.
+- **.NET 10 SDK** —— 내보내기 스크립트 실행에 필요합니다(스크립트는 `dotnet`으로 도구를 시작). 도구를 직접 빌드할 때도 필요합니다.
 - 확인: `dotnet --version`이 `10.x.x`를 출력해야 합니다.
 
-### 빌드
+### 자동 동기화(기본)
+
+`Tools/` 산출물은 **Tools Sync** 워크플로(`.github/workflows/tools-sync.yml`)가 관리합니다: 매주 월요일 09:00(베이징 시간)에 상류 `main` 브랜치의 Release 산출물을 자동으로 빌드하며, 변경이 있을 때만 커밋합니다. 즉시 동기화가 필요하면 리포지토리의 **Actions → Tools Sync → Run workflow**로 수동 실행하세요.
+
+### 직접 빌드(선택적 덮어쓰기)
+
+상류 규약에 따라 `GameFrameX.Tools`를 이 리포지토리와 같은 계층에 클론하면 빌드 산출물이 이 리포지토리의 `Tools/`에 직접 출력됩니다:
 
 ```bash
-# 1. 도구 리포지토리 클론
+# 1. 이 리포지토리와 같은 계층에 도구 리포지토리 클론
 git clone https://github.com/GameFrameX/GameFrameX.Tools.git
 cd GameFrameX.Tools/ProtoExport
 
-# 2. 빌드 (Release)
+# 2. 빌드 (Release) —— csproj의 OutputPath는 같은 계층의 Protobuf/Tools/로 고정 출력
 dotnet build -c Release
-
-# 3. 산출물은 bin/Release/net10.0/에 생성
-ls bin/Release/net10.0/
 ```
 
-### 빌드 산출물
+### 산출물 목록
 
-`GameFrameX.Tools/ProtoExport/bin/Release/net10.0/`에서 다음 파일들을 이 리포지토리의 `Tools/` 디렉터리로 복사합니다:
+`Tools/` 디렉터리에는 다음 4개의 필수 파일만 포함됩니다(자동 동기화와 직접 빌드 모두 동일):
 
 | 파일 | 필수 | 용도 |
 |------|:----:|------|
@@ -493,21 +496,8 @@ ls bin/Release/net10.0/
 | `ProtoExport.deps.json` | ✅ | 의존성 매니페스트 (런타임에 필요) |
 | `ProtoExport.runtimeconfig.json` | ✅ | 런타임 설정 (.NET 10 지정) |
 | `GameFrameX.Foundation.Options.dll` | ✅ | 명령줄 파싱 의존성 |
-| `ProtoExport` / `ProtoExport.exe` | ⛔ | 네이티브 apphost——스크립트 미사용 |
-| `ProtoExport.pdb` | ⛔ | 디버그 심볼 |
 
-```bash
-# 필수 4개 파일을 이 리포지토리의 Tools/로 복사
-cp bin/Release/net10.0/ProtoExport.dll                   /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/ProtoExport.deps.json             /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/ProtoExport.runtimeconfig.json    /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/GameFrameX.Foundation.Options.dll /path/to/GameFrameX.Protobuf/Tools/
-
-# 또는 전체 산출물을 한 번에 복사
-cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
-```
-
-> 네이티브 시작 프로그램(macOS/Linux의 `ProtoExport`, Windows의 `ProtoExport.exe`)은 선택 사항입니다——모든 `Proto2*` 스크립트는 `dotnet ./Tools/ProtoExport.dll`로 도구를 균일하게 시작하므로 크로스 플랫폼으로 일관됩니다.
+빌드 출력의 `ProtoExport.pdb`(디버그 심볼)와 네이티브 런처(macOS/Linux의 `ProtoExport`, Windows의 `ProtoExport.exe`)는 동기화되지 않습니다——모든 `Proto2*` 스크립트가 `dotnet ./Tools/ProtoExport.dll`로 도구를 통일 실행하므로 크로스 플랫폼에서 일관됩니다.
 
 ### 검증
 
@@ -524,14 +514,14 @@ Proto2CsExport_Client.bat     # Windows
 리포지토리 루트의 각 `Proto2*.sh` / `.bat` 스크립트는:
 
 1. 리포지토리 루트에서 실행되며;
-2. `Tools/`에 넣은 생성기를 `dotnet ./Tools/ProtoExport.dll`로 시작하고;
+2. 자동 동기화된 `Tools/`의 생성기를 `dotnet ./Tools/ProtoExport.dll`로 시작하고;
 3. 언어별 플래그(`--mode`, `--isServer` 등)를 전달합니다.
 
 따라서 `Tools/`에 올바른 산출물만 있으면 **모든 스크립트가 바로 실행됩니다**——언어별 매개변수를 직접 다룰 필요가 없습니다.
 
 ### 도구 업데이트
 
-`ProtoExport`가 상류에서 갱신되면, "빌드 + 산출물 복사"를 다시 실행하여 `Tools/`의 파일을 덮어씁니다. 도구 버전을 이 리포지토리의 프로토콜 규격과 동기화하세요——이 리포지토리의 최신 변경을 가져올 때 도구도 함께 다시 빌드하기를 권장합니다.
+`ProtoExport`가 상류에서 갱신되면, **Tools Sync** 워크플로가 매주 동기화 시 `Tools/`의 오래된 파일을 자동으로 덮어씁니다(수동 실행으로 즉시 동기화도 가능). 이 리포지토리의 최신 변경을 가져오면(pull) 최신 도구 버전을 얻을 수 있습니다.
 
 ## 빠른 시작
 
@@ -548,7 +538,7 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**옵션 C — 로컬 스크립트:** 도구를 직접 빌드하여 `Tools/`에 넣고(전체 절차는 [내보내기 도구](#내보내기-도구) 참조), 리포지토리 루트에서 실행합니다:
+**옵션 C — 로컬 스크립트:** `Tools/`의 산출물은 이미 자동 동기화되어 있습니다(로컬 .NET 10 SDK 필요). 리포지토리 루트에서 바로 실행합니다:
 
 ```bash
 ./Proto2CsExport_Server.sh   # C# (서버)

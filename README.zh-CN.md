@@ -29,7 +29,7 @@ GameFrameX.Protobuf 是 GameFrameX 框架的统一网络协议定义仓库。采
 
 - **CI（零配置）** —— 每次 `push` 都会自动导出全部语言并发布到滚动更新的 [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)，直接下载即可。
 - **Docker** —— `docker run gameframex/gameframex-tools:latest ...`，无需本地工具链。
-- **本地脚本** —— 自行构建 `Tools/ProtoExport`（.NET 10），把产物放入本仓库的 `Tools/` 目录后运行 `Proto2*Export.sh/.bat`。详见[导出工具](#导出工具)。
+- **本地脚本** —— `Tools/` 目录的 `ProtoExport` 产物由流水线每周自动同步，clone 后直接运行 `Proto2*Export.sh/.bat`。详见[导出工具](#导出工具)。
 
 完整文档托管在 [GameFrameX 文档站](https://gameframex.doc.alianblank.com/protobuf/require)。
 
@@ -450,11 +450,11 @@ docker run --rm \
 
 ## 导出工具
 
-本仓库的代码生成由独立的 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) 仓库中的 `ProtoExport` 工具驱动（一个 .NET 10 控制台程序）。**本仓库不内置该二进制**——从三种工作流中任选其一（见[快速开始](#快速开始)）：
+本仓库的代码生成由独立的 [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) 仓库中的 `ProtoExport` 工具驱动（一个 .NET 10 控制台程序）。**`Tools/` 目录内置该工具的二进制产物，由流水线每周自动同步**——clone 后即可直接运行本地脚本，无需自行构建（见[快速开始](#快速开始)）：
 
 - **CI** —— 零配置，直接从最新 Release 下载生成代码。
 - **Docker** —— 运行预构建镜像，无需本地工具链。
-- **本地脚本** —— 自行构建工具，把产物放入本仓库的 `Tools/` 目录（完整步骤见下文）。
+- **本地脚本** —— 直接使用 `Tools/` 下每周自动同步的产物；需要立即更新时，手动触发同步流水线或自行构建覆盖（见下文）。
 
 ### 工具仓库
 
@@ -466,26 +466,29 @@ docker run --rm \
 
 ### 环境要求
 
-- **.NET 10 SDK** —— 构建工具和运行导出脚本都需要它。
+- **.NET 10 SDK** —— 运行导出脚本需要它（脚本通过 `dotnet` 启动工具）；自行构建工具时同样需要。
 - 验证：`dotnet --version` 应输出 `10.x.x`。
 
-### 构建
+### 自动同步（默认）
+
+`Tools/` 产物由 **Tools Sync** 流水线（`.github/workflows/tools-sync.yml`）维护：每周一 09:00（北京时间）自动从上游 `main` 分支构建 Release 产物，有变化才提交。需要立即同步时，在仓库 **Actions → Tools Sync → Run workflow** 手动触发。
+
+### 自行构建（可选覆盖）
+
+上游约定 `GameFrameX.Tools` 与本仓库克隆到同级目录，构建产物直接输出到本仓库的 `Tools/`：
 
 ```bash
-# 1. 克隆工具仓库
+# 1. 与本仓库同级克隆工具仓库
 git clone https://github.com/GameFrameX/GameFrameX.Tools.git
 cd GameFrameX.Tools/ProtoExport
 
-# 2. 构建（Release）
+# 2. 构建（Release）—— csproj 的 OutputPath 固定输出到同级 Protobuf/Tools/
 dotnet build -c Release
-
-# 3. 产物在 bin/Release/net10.0/
-ls bin/Release/net10.0/
 ```
 
-### 构建产物
+### 产物清单
 
-把以下文件从 `GameFrameX.Tools/ProtoExport/bin/Release/net10.0/` 复制到本仓库的 `Tools/` 目录：
+`Tools/` 目录只包含以下 4 个必需文件（自动同步与手动构建均只需这些）：
 
 | 文件 | 必需 | 作用 |
 |------|:----:|------|
@@ -493,21 +496,8 @@ ls bin/Release/net10.0/
 | `ProtoExport.deps.json` | ✅ | 依赖描述（运行时必需） |
 | `ProtoExport.runtimeconfig.json` | ✅ | 运行时配置（指定 .NET 10） |
 | `GameFrameX.Foundation.Options.dll` | ✅ | 命令行参数解析依赖 |
-| `ProtoExport` / `ProtoExport.exe` | ⛔ | 原生启动器，脚本不使用 |
-| `ProtoExport.pdb` | ⛔ | 调试符号 |
 
-```bash
-# 把四个必需文件复制到本仓库的 Tools/ 目录
-cp bin/Release/net10.0/ProtoExport.dll                   /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/ProtoExport.deps.json             /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/ProtoExport.runtimeconfig.json    /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/GameFrameX.Foundation.Options.dll /path/to/GameFrameX.Protobuf/Tools/
-
-# 或一键复制全部产物
-cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
-```
-
-> 原生启动器（macOS/Linux 的 `ProtoExport`、Windows 的 `ProtoExport.exe`）可选——所有 `Proto2*` 脚本统一通过 `dotnet ./Tools/ProtoExport.dll` 启动工具，跨平台一致。
+构建输出中的 `ProtoExport.pdb`（调试符号）与原生启动器（macOS/Linux 的 `ProtoExport`、Windows 的 `ProtoExport.exe`）不会被同步——所有 `Proto2*` 脚本统一通过 `dotnet ./Tools/ProtoExport.dll` 启动工具，跨平台一致。
 
 ### 验证
 
@@ -524,14 +514,14 @@ Proto2CsExport_Client.bat     # Windows
 仓库根目录的每个 `Proto2*.sh` / `.bat` 脚本都会：
 
 1. 从仓库根目录运行；
-2. 通过 `dotnet ./Tools/ProtoExport.dll` 启动你放入 `Tools/` 的生成器；
+2. 通过 `dotnet ./Tools/ProtoExport.dll` 启动 `Tools/` 下自动同步的生成器；
 3. 传入对应语言的参数（`--mode`、`--isServer` 等）。
 
 因此**只要 `Tools/` 下有正确的产物，所有脚本即可直接运行**——无需关心各脚本的参数细节。
 
 ### 更新工具
 
-`ProtoExport` 上游迭代后，重新执行「构建 + 复制产物」覆盖 `Tools/` 下的旧文件即可。建议把工具版本与本仓库协议规范保持同步——拉取本仓库最新变更时一并重建工具。
+`ProtoExport` 上游迭代后，**Tools Sync** 流水线会在每周同步时自动覆盖 `Tools/` 下的旧文件（也可手动触发立即同步）。拉取本仓库最新变更即可获得最新的工具版本。
 
 ## 快速开始
 
@@ -548,7 +538,7 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**方案 C —— 本地脚本：** 自行构建工具并放入 `Tools/`（完整步骤见[导出工具](#导出工具)），然后在仓库根目录运行：
+**方案 C —— 本地脚本：** `Tools/` 产物已自动同步就绪（需本地 .NET 10 SDK），在仓库根目录直接运行：
 
 ```bash
 ./Proto2CsExport_Server.sh   # C#（服务端）

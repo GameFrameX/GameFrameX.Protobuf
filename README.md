@@ -29,7 +29,7 @@ Code generation is driven by the [GameFrameX.Tools `ProtoExport`](https://github
 
 - **CI (zero setup)** — every `push` auto-exports all languages and publishes to the rolling [`latest` Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest). Just download.
 - **Docker** — `docker run gameframex/gameframex-tools:latest ...`, no toolchain to install.
-- **Local scripts** — build `Tools/ProtoExport` (.NET 10) yourself, drop the output into this repo's `Tools/` directory, then run `Proto2*Export.sh/.bat`. See [Export Tool](#export-tool) for details.
+- **Local scripts** — the `ProtoExport` artifacts in `Tools/` are synced weekly by a workflow; clone and run `Proto2*Export.sh/.bat` directly. See [Export Tool](#export-tool) for details.
 
 Full documentation is hosted at the [GameFrameX documentation site](https://gameframex.doc.alianblank.com/protobuf/require).
 
@@ -450,11 +450,11 @@ Download the latest generated code from the [Releases page](https://github.com/G
 
 ## Export Tool
 
-Code generation is driven by `ProtoExport`, a .NET 10 console app in the standalone [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) repository. **This repo does not ship the binary** — pick one of three workflows (see [Quick Start](#quick-start)):
+Code generation is driven by `ProtoExport`, a .NET 10 console app in the standalone [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) repository. **This repo ships the binary in `Tools/`, synced weekly by a workflow** — local scripts work right after clone, no build required (see [Quick Start](#quick-start)):
 
 - **CI** — zero setup; download generated code from the latest Release.
 - **Docker** — run the pre-built image, no local toolchain.
-- **Local scripts** — build the tool yourself and drop the output into this repo's `Tools/` directory (full steps below).
+- **Local scripts** — use the weekly-synced artifacts in `Tools/` directly; to refresh them immediately, trigger the sync workflow manually or build your own (see below).
 
 ### Tool repository
 
@@ -466,26 +466,29 @@ Code generation is driven by `ProtoExport`, a .NET 10 console app in the standal
 
 ### Prerequisites
 
-- **.NET 10 SDK** — required both to build the tool and to run the export scripts.
+- **.NET 10 SDK** — required to run the export scripts (they launch the tool via `dotnet`); also required if you build the tool yourself.
 - Verify: `dotnet --version` should print `10.x.x`.
 
-### Build
+### Automatic sync (default)
+
+The `Tools/` artifacts are maintained by the **Tools Sync** workflow (`.github/workflows/tools-sync.yml`): every Monday at 09:00 (Beijing time) it builds the Release artifacts from upstream `main` and commits only when something changed. To sync immediately, trigger it manually via **Actions → Tools Sync → Run workflow**.
+
+### Manual build (optional override)
+
+The upstream convention is to clone `GameFrameX.Tools` next to this repo; build output then lands directly in this repo's `Tools/`:
 
 ```bash
-# 1. Clone the tool repository
+# 1. Clone the tool repository next to this repo
 git clone https://github.com/GameFrameX/GameFrameX.Tools.git
 cd GameFrameX.Tools/ProtoExport
 
-# 2. Build (Release)
+# 2. Build (Release) — the csproj OutputPath targets the sibling Protobuf/Tools/
 dotnet build -c Release
-
-# 3. Output lands in bin/Release/net10.0/
-ls bin/Release/net10.0/
 ```
 
-### Build artifacts
+### Artifact manifest
 
-Copy these files from `GameFrameX.Tools/ProtoExport/bin/Release/net10.0/` into this repo's `Tools/` directory:
+`Tools/` contains only the four required files (the same set produced by both the automatic sync and a manual build):
 
 | File | Required | Purpose |
 |------|:--------:|---------|
@@ -493,21 +496,8 @@ Copy these files from `GameFrameX.Tools/ProtoExport/bin/Release/net10.0/` into t
 | `ProtoExport.deps.json` | ✅ | Dependency manifest (required at runtime) |
 | `ProtoExport.runtimeconfig.json` | ✅ | Runtime config (pins .NET 10) |
 | `GameFrameX.Foundation.Options.dll` | ✅ | Command-line parsing dependency |
-| `ProtoExport` / `ProtoExport.exe` | ⛔ | Native apphost — scripts don't use it |
-| `ProtoExport.pdb` | ⛔ | Debug symbols |
 
-```bash
-# Copy the four required files into this repo's Tools/ directory
-cp bin/Release/net10.0/ProtoExport.dll                   /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/ProtoExport.deps.json             /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/ProtoExport.runtimeconfig.json    /path/to/GameFrameX.Protobuf/Tools/
-cp bin/Release/net10.0/GameFrameX.Foundation.Options.dll /path/to/GameFrameX.Protobuf/Tools/
-
-# Or copy everything in one shot
-cp bin/Release/net10.0/* /path/to/GameFrameX.Protobuf/Tools/
-```
-
-> The native launcher (`ProtoExport` on macOS/Linux, `ProtoExport.exe` on Windows) is optional — every `Proto2*` script launches the tool uniformly via `dotnet ./Tools/ProtoExport.dll`, which is cross-platform.
+`ProtoExport.pdb` (debug symbols) and the native launchers (`ProtoExport` on macOS/Linux, `ProtoExport.exe` on Windows) are never synced — every `Proto2*` script launches the tool uniformly via `dotnet ./Tools/ProtoExport.dll`, which is cross-platform.
 
 ### Verify
 
@@ -524,14 +514,14 @@ A line like `协议扫描完成: ... 导出 N 个，跳过 M 个` means the tool
 Every `Proto2*.sh` / `.bat` script at the repo root:
 
 1. Runs from the repo root;
-2. Launches the generator you placed in `Tools/` via `dotnet ./Tools/ProtoExport.dll`;
+2. Launches the auto-synced generator in `Tools/` via `dotnet ./Tools/ProtoExport.dll`;
 3. Passes language-specific flags (`--mode`, `--isServer`, etc.).
 
 So once `Tools/` holds the correct artifacts, **all scripts run directly** — you never touch per-language parameters by hand.
 
 ### Updating the tool
 
-When `ProtoExport` is updated upstream, re-run "Build + copy artifacts" to overwrite the files in `Tools/`. Keep the tool version aligned with this repo's protocol spec — pull this repo's latest changes and rebuild the tool together.
+When `ProtoExport` is updated upstream, the **Tools Sync** workflow overwrites the files in `Tools/` on its weekly run (you can also trigger it manually for an immediate sync). Pull this repo's latest changes to pick up the current tool version.
 
 ## Quick Start
 
@@ -548,7 +538,7 @@ docker run --rm \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
 
-**Option C — Local scripts:** build the tool yourself and drop it into `Tools/` (full steps in [Export Tool](#export-tool)), then from the repo root:
+**Option C — Local scripts:** the `Tools/` artifacts are already synced (requires a local .NET 10 SDK); from the repo root:
 
 ```bash
 ./Proto2CsExport_Server.sh   # C# (server)
