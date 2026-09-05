@@ -5,9 +5,14 @@
 # GameFrameX.Protobuf
 
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
 [![CI](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml/badge.svg)](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml)
+
+[![Discord](https://img.shields.io/badge/-5865F2?logo=discord&logoColor=white)](https://discord.gg/VDWUjWMDw9)
+[![GitHub](https://img.shields.io/badge/-181717?logo=github&logoColor=white)](https://github.com/GameFrameX/gameframex)
+[![Bilibili](https://img.shields.io/badge/-00A1D6?logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1yrpeepEn7)
+[![Gitee](https://img.shields.io/badge/-C71D23?logo=gitee&logoColor=white)](https://gitee.com/GameFrameX/gameframex)
 
 **All-in-One Solution for Indie Game Development · Empowering Indie Developers' Dreams**
 
@@ -32,6 +37,48 @@ Code generation is driven by the [GameFrameX.Tools `ProtoExport`](https://github
 - **Local scripts** — the `ProtoExport` artifacts in `Tools/` are synced weekly by a workflow; clone and run `Proto2*Export.sh/.bat` directly. See [Export Tool](#export-tool) for details.
 
 Full documentation is hosted at the [GameFrameX documentation site](https://gameframex.doc.alianblank.com/protobuf/require).
+
+### Features
+
+- Unified `proto3` protocol definitions organized by numeric module ID
+- One-command code generation for C#, C++, Go, Lua, and TypeScript via ready-made scripts
+- CI publishes all language bundles to a rolling `latest` Release on every push
+- Docker image plus weekly-synced `Tools/` artifacts — no toolchain setup required
+
+## Quick Start
+
+### Installation
+
+**Option A — Download from CI (zero setup):** grab the bundle for your language from the [latest Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest).
+
+**Option B — Docker:**
+
+```bash
+docker run --rm \
+  -v "$PWD":/protos \
+  -v "$PWD/output":/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
+```
+
+**Option C — Local scripts:** the `Tools/` artifacts are already synced (requires a local .NET 10 SDK); from the repo root:
+
+```bash
+./Proto2CsExport_Server.sh   # C# (server)
+./Proto2GoExport.sh          # Go
+```
+
+## Usage Examples
+
+Export locally with the shipped scripts, straight from the repo root:
+
+```bash
+./Proto2CsExport_Server.sh   # C# (server)
+./Proto2GoExport.sh          # Go
+```
+
+Every script launches the auto-synced generator in `Tools/` via `dotnet ./Tools/ProtoExport.dll`. See [Export Parameters](#export-parameters) for the full parameter list, and the [export documentation](https://gameframex.doc.alianblank.com/protobuf/require) for details.
 
 ## Protocol Modules
 
@@ -310,13 +357,13 @@ Internal protocols additionally carry a **negative module ID** for routing separ
 
 | Language | Mode & Flags | Local Script | Docker |
 |----------|--------------|--------------|--------|
-| C# (Server) | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | ✅ |
-| C# (Client / Unity / Godot) | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | ✅ |
-| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | ✅ |
-| Go | `go` | `Proto2GoExport.sh` / `.bat` | ✅ |
-| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | ✅ |
-| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | ✅ |
-| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | ✅ |
+| C# (Server) | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | Yes |
+| C# (Client / Unity / Godot) | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | Yes |
+| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | Yes |
+| Go | `go` | `Proto2GoExport.sh` / `.bat` | Yes |
+| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | Yes |
+| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | Yes |
+| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | Yes |
 
 ### Docker Examples
 
@@ -492,10 +539,10 @@ dotnet build -c Release
 
 | File | Required | Purpose |
 |------|:--------:|---------|
-| `ProtoExport.dll` | ✅ | Main assembly |
-| `ProtoExport.deps.json` | ✅ | Dependency manifest (required at runtime) |
-| `ProtoExport.runtimeconfig.json` | ✅ | Runtime config (pins .NET 10) |
-| `GameFrameX.Foundation.Options.dll` | ✅ | Command-line parsing dependency |
+| `ProtoExport.dll` | Yes | Main assembly |
+| `ProtoExport.deps.json` | Yes | Dependency manifest (required at runtime) |
+| `ProtoExport.runtimeconfig.json` | Yes | Runtime config (pins .NET 10) |
+| `GameFrameX.Foundation.Options.dll` | Yes | Command-line parsing dependency |
 
 `ProtoExport.pdb` (debug symbols) and the native launchers (`ProtoExport` on macOS/Linux, `ProtoExport.exe` on Windows) are never synced — every `Proto2*` script launches the tool uniformly via `dotnet ./Tools/ProtoExport.dll`, which is cross-platform.
 
@@ -523,26 +570,46 @@ So once `Tools/` holds the correct artifacts, **all scripts run directly** — y
 
 When `ProtoExport` is updated upstream, the **Tools Sync** workflow overwrites the files in `Tools/` on its weekly run (you can also trigger it manually for an immediate sync). Pull this repo's latest changes to pick up the current tool version.
 
-## Quick Start
+## Dependencies
 
-**Option A — Download from CI (zero setup):** grab the bundle for your language from the [latest Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest).
+| Dependency | Purpose |
+|------------|---------|
+| [GameFrameX.Tools `ProtoExport`](https://github.com/GameFrameX/GameFrameX.Tools) | Code generator driving all exports (.NET 10 console app) |
+| [`gameframex/gameframex-tools`](https://hub.docker.com/r/gameframex/gameframex-tools) Docker image | Containerized export, no local toolchain needed |
+| .NET 10 SDK | Required only when running the local export scripts |
 
-**Option B — Docker:**
+## Documentation & Resources
 
-```bash
-docker run --rm \
-  -v "$PWD":/protos \
-  -v "$PWD/output":/output \
-  gameframex/gameframex-tools:latest \
-  --mode csharp --isServer true \
-  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
-```
+- [Protocol Documentation](https://gameframex.doc.alianblank.com/protobuf/require) — protocol conventions and export guide
+- [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) — `ProtoExport` source, full parameter docs, Docker image
+- [Releases](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) — rolling bundles of generated code for all languages
+- [Export workflow](.github/workflows/proto-export.yml) and [Tools Sync workflow](.github/workflows/tools-sync.yml)
 
-**Option C — Local scripts:** the `Tools/` artifacts are already synced (requires a local .NET 10 SDK); from the repo root:
+## Community & Support
 
-```bash
-./Proto2CsExport_Server.sh   # C# (server)
-./Proto2GoExport.sh          # Go
-```
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/GameFrameX/gameframex)
+[![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/VDWUjWMDw9)
+[<img src="https://cdn.jsdelivr.net/npm/devicon@2/icons/linkedin/linkedin-original.svg" height="28" alt="LinkedIn" />](https://www.linkedin.com/in/alianblank)
+[![Reddit](https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white)](https://www.reddit.com/r/GameFrameX/)
+[![X](https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/alian_blank)
+[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCD9QhSFJ5xZkn5NTSV-DVAw)
+[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=for-the-badge&logo=bluesky&logoColor=white)](https://bsky.app/profile/alianblank.bsky.social)
+[![Bilibili](https://img.shields.io/badge/Bilibili-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1yrpeepEn7)
+[![Gitee](https://img.shields.io/badge/Gitee-C71D23?style=for-the-badge&logo=gitee&logoColor=white)](https://gitee.com/GameFrameX/gameframex)
+![QQ](https://img.shields.io/badge/QQ-467608841%2F233840761-EB1923?style=for-the-badge&logo=qq&logoColor=white)
 
-Every script invokes the generator in `Tools/` via `dotnet ./Tools/ProtoExport.dll`; see the [export documentation](https://gameframex.doc.alianblank.com/protobuf/require) for parameter details.
+## Changelog
+
+See the [Releases page](https://github.com/GameFrameX/GameFrameX.Protobuf/releases) — every push to `main` republishes the rolling `latest` Release with freshly generated code.
+
+## License
+
+See [LICENSE.md](LICENSE.md) for license information.
+
+<!--
+EN: See [LICENSE.md](LICENSE.md) for license information.
+zh-CN: 详见 [LICENSE.md](LICENSE.md) 文件。
+zh-TW: 詳見 [LICENSE.md](LICENSE.md) 檔案。
+ja: 詳しくは [LICENSE.md](LICENSE.md) をご参照ください。
+ko: 자세한 내용은 [LICENSE.md](LICENSE.md) 파일을 참조하세요.
+-->

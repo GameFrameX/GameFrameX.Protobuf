@@ -5,9 +5,14 @@
 # GameFrameX.Protobuf
 
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
 [![CI](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml/badge.svg)](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml)
+
+[![Discord](https://img.shields.io/badge/-5865F2?logo=discord&logoColor=white)](https://discord.gg/VDWUjWMDw9)
+[![GitHub](https://img.shields.io/badge/-181717?logo=github&logoColor=white)](https://github.com/GameFrameX/gameframex)
+[![Bilibili](https://img.shields.io/badge/-00A1D6?logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1yrpeepEn7)
+[![Gitee](https://img.shields.io/badge/-C71D23?logo=gitee&logoColor=white)](https://gitee.com/GameFrameX/gameframex)
 
 **インディゲーム開発者向けオールインワンソリューション · インディ開発者の夢を支援**
 
@@ -32,6 +37,48 @@ GameFrameX.Protobuf は、GameFrameX フレームワークの統一ネットワ�
 - **ローカルスクリプト** —— `Tools/` ディレクトリの `ProtoExport` 成果物はワークフローにより毎週自動同期されます。クローン後すぐ `Proto2*Export.sh/.bat` を実行できます。詳しくは[エクスポートツール](#エクスポートツール)を参照。
 
 完全なドキュメントは [GameFrameX ドキュメントサイト](https://gameframex.doc.alianblank.com/protobuf/require) で公開されています。
+
+### 機能概要
+
+- 数値モジュール ID で整理された統一の `proto3` プロトコル定義
+- 同梱スクリプトで C#、C++、Go、Lua、TypeScript をワンコマンド生成
+- 各 `push` で CI が全言語の成果物をローリング `latest` Release に自動公開
+- Docker イメージと毎週自動同期される `Tools/` 成果物により、ツールチェーン設定不要
+
+## クイックスタート
+
+### インストール
+
+**オプション A —— CI からダウンロード（セットアップ不要）:** 必要な言語のバンドルを[最新の Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)から取得。
+
+**オプション B —— Docker:**
+
+```bash
+docker run --rm \
+  -v "$PWD":/protos \
+  -v "$PWD/output":/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
+```
+
+**オプション C —— ローカルスクリプト:** `Tools/` の成果物は自動同期済みです（ローカルの .NET 10 SDK が必要）。リポジトリルートでそのまま実行します:
+
+```bash
+./Proto2CsExport_Server.sh   # C#（サーバー）
+./Proto2GoExport.sh          # Go
+```
+
+## 使用例
+
+リポジトリルートで同梱スクリプトをそのまま実行してローカル生成します:
+
+```bash
+./Proto2CsExport_Server.sh   # C#（サーバー）
+./Proto2GoExport.sh          # Go
+```
+
+各スクリプトは `dotnet ./Tools/ProtoExport.dll` で `Tools/` の自動同期された生成器を起動します。パラメータ一覧は[エクスポートパラメータ](#エクスポートパラメータ)、詳細は[エクスポートドキュメント](https://gameframex.doc.alianblank.com/protobuf/require)を参照してください。
 
 ## プロトコルモジュール
 
@@ -310,13 +357,13 @@ option module = 10;    // 必須: モジュール ID を定義すること
 
 | 言語 | Mode & Flags | ローカルスクリプト | Docker |
 |------|--------------|--------------------|--------|
-| C# (Server) | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | ✅ |
-| C# (Client / Unity / Godot) | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | ✅ |
-| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | ✅ |
-| Go | `go` | `Proto2GoExport.sh` / `.bat` | ✅ |
-| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | ✅ |
-| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | ✅ |
-| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | ✅ |
+| C# (Server) | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | はい |
+| C# (Client / Unity / Godot) | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | はい |
+| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | はい |
+| Go | `go` | `Proto2GoExport.sh` / `.bat` | はい |
+| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | はい |
+| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | はい |
+| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | はい |
 
 ### Docker 例
 
@@ -492,10 +539,10 @@ dotnet build -c Release
 
 | ファイル | 必須 | 目的 |
 |----------|:----:|------|
-| `ProtoExport.dll` | ✅ | メインアセンブリ |
-| `ProtoExport.deps.json` | ✅ | 依存関係マニフェスト（実行時に必要） |
-| `ProtoExport.runtimeconfig.json` | ✅ | ランタイム設定（.NET 10 を指定） |
-| `GameFrameX.Foundation.Options.dll` | ✅ | コマンドライン解析の依存 |
+| `ProtoExport.dll` | はい | メインアセンブリ |
+| `ProtoExport.deps.json` | はい | 依存関係マニフェスト（実行時に必要） |
+| `ProtoExport.runtimeconfig.json` | はい | ランタイム設定（.NET 10 を指定） |
+| `GameFrameX.Foundation.Options.dll` | はい | コマンドライン解析の依存 |
 
 ビルド出力の `ProtoExport.pdb`（デバッグシンボル）とネイティブランチャー（macOS/Linux の `ProtoExport`、Windows の `ProtoExport.exe`）は同期されません——すべての `Proto2*` スクリプトは `dotnet ./Tools/ProtoExport.dll` で統一起動するため、クロスプラットフォームで一貫します。
 
@@ -523,26 +570,46 @@ Proto2CsExport_Client.bat     # Windows
 
 `ProtoExport` が上流で更新されたら、**Tools Sync** ワークフローが毎週の同期時に `Tools/` の旧ファイルを自動上書きします（手動実行で即時同期も可能）。本リポジトリの最新変更をプルすれば、最新のツール版が手に入ります。
 
-## クイックスタート
+## 依存関係
 
-**オプション A —— CI からダウンロード（セットアップ不要）:** 必要な言語のバンドルを[最新の Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest)から取得。
+| 依存関係 | 用途 |
+|----------|------|
+| [GameFrameX.Tools `ProtoExport`](https://github.com/GameFrameX/GameFrameX.Tools) | すべてのエクスポートを駆動するコード生成器（.NET 10 コンソールアプリ） |
+| [`gameframex/gameframex-tools`](https://hub.docker.com/r/gameframex/gameframex-tools) Docker イメージ | コンテナでのエクスポート、ローカルツールチェーン不要 |
+| .NET 10 SDK | ローカルエクスポートスクリプトの実行にのみ必要 |
 
-**オプション B —— Docker:**
+## ドキュメントとリソース
 
-```bash
-docker run --rm \
-  -v "$PWD":/protos \
-  -v "$PWD/output":/output \
-  gameframex/gameframex-tools:latest \
-  --mode csharp --isServer true \
-  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
-```
+- [プロトコルドキュメント](https://gameframex.doc.alianblank.com/protobuf/require) —— プロトコル規約とエクスポートガイド
+- [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) —— `ProtoExport` のソース、完全なパラメータドキュメント、Docker イメージ
+- [Releases](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) —— 全言語の生成コードをまとめたローリングバンドル
+- [エクスポートワークフロー](.github/workflows/proto-export.yml) と [Tools Sync ワークフロー](.github/workflows/tools-sync.yml)
 
-**オプション C —— ローカルスクリプト:** `Tools/` の成果物は自動同期済みです（ローカルの .NET 10 SDK が必要）。リポジトリルートでそのまま実行します:
+## コミュニティとサポート
 
-```bash
-./Proto2CsExport_Server.sh   # C#（サーバー）
-./Proto2GoExport.sh          # Go
-```
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/GameFrameX/gameframex)
+[![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/VDWUjWMDw9)
+[<img src="https://cdn.jsdelivr.net/npm/devicon@2/icons/linkedin/linkedin-original.svg" height="28" alt="LinkedIn" />](https://www.linkedin.com/in/alianblank)
+[![Reddit](https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white)](https://www.reddit.com/r/GameFrameX/)
+[![X](https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/alian_blank)
+[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCD9QhSFJ5xZkn5NTSV-DVAw)
+[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=for-the-badge&logo=bluesky&logoColor=white)](https://bsky.app/profile/alianblank.bsky.social)
+[![Bilibili](https://img.shields.io/badge/Bilibili-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1yrpeepEn7)
+[![Gitee](https://img.shields.io/badge/Gitee-C71D23?style=for-the-badge&logo=gitee&logoColor=white)](https://gitee.com/GameFrameX/gameframex)
+![QQ](https://img.shields.io/badge/QQ-467608841%2F233840761-EB1923?style=for-the-badge&logo=qq&logoColor=white)
 
-各スクリプトは `dotnet ./Tools/ProtoExport.dll` で `Tools/` の生成器を呼び出します。パラメータの詳細は[エクスポート文档](https://gameframex.doc.alianblank.com/protobuf/require)を参照してください。
+## 変更履歴
+
+[Releases ページ](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)を参照してください——`main` への各 `push` で、最新の生成コードを添付したローリング `latest` Release が再公開されます。
+
+## ライセンス
+
+詳しくは [LICENSE.md](LICENSE.md) をご参照ください。
+
+<!--
+EN: See [LICENSE.md](LICENSE.md) for license information.
+zh-CN: 详见 [LICENSE.md](LICENSE.md) 文件。
+zh-TW: 詳見 [LICENSE.md](LICENSE.md) 檔案。
+ja: 詳しくは [LICENSE.md](LICENSE.md) をご参照ください。
+ko: 자세한 내용은 [LICENSE.md](LICENSE.md) 파일을 참조하세요.
+-->

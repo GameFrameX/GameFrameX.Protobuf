@@ -5,9 +5,14 @@
 # GameFrameX.Protobuf
 
 [![Version](https://img.shields.io/github/v/release/GameFrameX/GameFrameX.Protobuf?label=version&color=green)](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-blue.svg)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-gameframex-brightgreen.svg)](https://gameframex.doc.alianblank.com)
 [![CI](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml/badge.svg)](https://github.com/GameFrameX/GameFrameX.Protobuf/actions/workflows/proto-export.yml)
+
+[![Discord](https://img.shields.io/badge/-5865F2?logo=discord&logoColor=white)](https://discord.gg/VDWUjWMDw9)
+[![GitHub](https://img.shields.io/badge/-181717?logo=github&logoColor=white)](https://github.com/GameFrameX/gameframex)
+[![Bilibili](https://img.shields.io/badge/-00A1D6?logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1yrpeepEn7)
+[![Gitee](https://img.shields.io/badge/-C71D23?logo=gitee&logoColor=white)](https://gitee.com/GameFrameX/gameframex)
 
 **獨立遊戲前後端一體化解決方案 · 獨立遊戲開發者的圓夢大使**
 
@@ -32,6 +37,48 @@ GameFrameX.Protobuf 是 GameFrameX 框架的統一網路協議定義倉庫。採
 - **本地腳本** —— `Tools/` 目錄的 `ProtoExport` 產物由流水線每週自動同步，clone 後直接執行 `Proto2*Export.sh/.bat`。詳見[匯出工具](#匯出工具)。
 
 完整文件託管於 [GameFrameX 文檔站](https://gameframex.doc.alianblank.com/protobuf/require)。
+
+### 功能特性
+
+- 統一的 `proto3` 協議定義，按數字模組 ID 組織
+- 倉庫自帶腳本，一條命令匯出 C#、C++、Go、Lua、TypeScript
+- 每次 `push` 由 CI 自動發布所有語言產物到滾動更新的 `latest` Release
+- Docker 映像檔 + `Tools/` 產物每週自動同步，無需配置本地工具鏈
+
+## 快速開始
+
+### 安裝
+
+**選項 A —— 從 CI 下載（零配置）：** 從[最新 Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) 取得你所需語言的套件。
+
+**選項 B —— Docker：**
+
+```bash
+docker run --rm \
+  -v "$PWD":/protos \
+  -v "$PWD/output":/output \
+  gameframex/gameframex-tools:latest \
+  --mode csharp --isServer true \
+  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
+```
+
+**選項 C —— 本地腳本：** `Tools/` 產物已自動同步就緒（需本地 .NET 10 SDK），在倉庫根目錄直接執行：
+
+```bash
+./Proto2CsExport_Server.sh   # C#（伺服器）
+./Proto2GoExport.sh          # Go
+```
+
+## 使用範例
+
+在倉庫根目錄直接執行自帶腳本本地匯出：
+
+```bash
+./Proto2CsExport_Server.sh   # C#（伺服器）
+./Proto2GoExport.sh          # Go
+```
+
+所有腳本透過 `dotnet ./Tools/ProtoExport.dll` 啟動 `Tools/` 下自動同步的產生器。完整參數列表見[匯出參數](#匯出參數)，細節見[匯出文件](https://gameframex.doc.alianblank.com/protobuf/require)。
 
 ## 協議模組
 
@@ -310,13 +357,13 @@ option module = 10;    // 必填：必須定義模組 ID
 
 | 語言 | 模式與旗標 | 本地腳本 | Docker |
 |------|-----------|---------|--------|
-| C#（伺服器） | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | ✅ |
-| C#（客戶端 / Unity / Godot） | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | ✅ |
-| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | ✅ |
-| Go | `go` | `Proto2GoExport.sh` / `.bat` | ✅ |
-| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | ✅ |
-| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | ✅ |
-| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | ✅ |
+| C#（伺服器） | `csharp --isServer true` | `Proto2CsExport_Server.sh` / `.bat` | 是 |
+| C#（客戶端 / Unity / Godot） | `csharp` | `Proto2CsExport_Client.sh` / `.bat` | 是 |
+| C++ | `cpp` | `Proto2CppExport.sh` / `.bat` | 是 |
+| Go | `go` | `Proto2GoExport.sh` / `.bat` | 是 |
+| Lua | `lua` | `Proto2LuaExport.sh` / `.bat` | 是 |
+| TypeScript | `typescript` | `Proto2TsExport.sh` / `.bat` | 是 |
+| TypeScript (LayaBox) | `typescript` | `Proto2TsExport_LayaBox.sh` | 是 |
 
 ### Docker 範例
 
@@ -492,10 +539,10 @@ dotnet build -c Release
 
 | 檔案 | 必要 | 作用 |
 |------|:----:|------|
-| `ProtoExport.dll` | ✅ | 主程式集 |
-| `ProtoExport.deps.json` | ✅ | 相依描述（執行時必要） |
-| `ProtoExport.runtimeconfig.json` | ✅ | 執行時設定（指定 .NET 10） |
-| `GameFrameX.Foundation.Options.dll` | ✅ | 命令列參數解析相依 |
+| `ProtoExport.dll` | 是 | 主程式集 |
+| `ProtoExport.deps.json` | 是 | 相依描述（執行時必要） |
+| `ProtoExport.runtimeconfig.json` | 是 | 執行時設定（指定 .NET 10） |
+| `GameFrameX.Foundation.Options.dll` | 是 | 命令列參數解析相依 |
 
 建置輸出中的 `ProtoExport.pdb`（除錯符號）與原生啟動器（macOS/Linux 的 `ProtoExport`、Windows 的 `ProtoExport.exe`）不會被同步——所有 `Proto2*` 腳本統一透過 `dotnet ./Tools/ProtoExport.dll` 啟動工具，跨平台一致。
 
@@ -523,26 +570,46 @@ Proto2CsExport_Client.bat     # Windows
 
 `ProtoExport` 上游迭代後，**Tools Sync** 流水線會在每週同步時自動覆蓋 `Tools/` 下的舊檔案（也可手動觸發立即同步）。拉取本倉庫最新變更即可獲得最新的工具版本。
 
-## 快速開始
+## 依賴
 
-**選項 A —— 從 CI 下載（零配置）：** 從[最新 Release](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) 取得你所需語言的套件。
+| 依賴 | 用途 |
+|------|------|
+| [GameFrameX.Tools `ProtoExport`](https://github.com/GameFrameX/GameFrameX.Tools) | 驅動全部匯出的程式碼產生器（.NET 10 主控台程式） |
+| [`gameframex/gameframex-tools`](https://hub.docker.com/r/gameframex/gameframex-tools) Docker 映像檔 | 容器化匯出，無需本地工具鏈 |
+| .NET 10 SDK | 僅執行本地匯出腳本時需要 |
 
-**選項 B —— Docker：**
+## 文檔與資源
 
-```bash
-docker run --rm \
-  -v "$PWD":/protos \
-  -v "$PWD/output":/output \
-  gameframex/gameframex-tools:latest \
-  --mode csharp --isServer true \
-  --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
-```
+- [協議文檔](https://gameframex.doc.alianblank.com/protobuf/require) —— 協議規範與匯出指南
+- [GameFrameX.Tools](https://github.com/GameFrameX/GameFrameX.Tools) —— `ProtoExport` 原始碼、完整參數文件、Docker 映像檔
+- [Releases](https://github.com/GameFrameX/GameFrameX.Protobuf/releases/latest) —— 滾動發布的全語言生成程式碼包
+- [匯出流水線](.github/workflows/proto-export.yml) 與 [Tools Sync 流水線](.github/workflows/tools-sync.yml)
 
-**選項 C —— 本地腳本：** `Tools/` 產物已自動同步就緒（需本地 .NET 10 SDK），在倉庫根目錄直接執行：
+## 社區與支援
 
-```bash
-./Proto2CsExport_Server.sh   # C#（伺服器）
-./Proto2GoExport.sh          # Go
-```
+![QQ](https://img.shields.io/badge/QQ-467608841%2F233840761-EB1923?style=for-the-badge&logo=qq&logoColor=white)
+[![Bilibili](https://img.shields.io/badge/Bilibili-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1yrpeepEn7)
+[![Gitee](https://img.shields.io/badge/Gitee-C71D23?style=for-the-badge&logo=gitee&logoColor=white)](https://gitee.com/GameFrameX/gameframex)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/GameFrameX/gameframex)
+[![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/VDWUjWMDw9)
+[<img src="https://cdn.jsdelivr.net/npm/devicon@2/icons/linkedin/linkedin-original.svg" height="28" alt="LinkedIn" />](https://www.linkedin.com/in/alianblank)
+[![Reddit](https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white)](https://www.reddit.com/r/GameFrameX/)
+[![X](https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/alian_blank)
+[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCD9QhSFJ5xZkn5NTSV-DVAw)
+[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=for-the-badge&logo=bluesky&logoColor=white)](https://bsky.app/profile/alianblank.bsky.social)
 
-所有腳本透過 `dotnet ./Tools/ProtoExport.dll` 調用 `Tools/` 下的產生器；參數細節見[匯出文件](https://gameframex.doc.alianblank.com/protobuf/require)。
+## 更新日誌
+
+見 [Releases 頁面](https://github.com/GameFrameX/GameFrameX.Protobuf/releases)——每次 `push` 到 `main` 都會重新發布滾動更新的 `latest` Release，附帶最新生成的程式碼。
+
+## 開源協議
+
+詳見 [LICENSE.md](LICENSE.md) 檔案。
+
+<!--
+EN: See [LICENSE.md](LICENSE.md) for license information.
+zh-CN: 详见 [LICENSE.md](LICENSE.md) 文件。
+zh-TW: 詳見 [LICENSE.md](LICENSE.md) 檔案。
+ja: 詳しくは [LICENSE.md](LICENSE.md) をご参照ください。
+ko: 자세한 내용은 [LICENSE.md](LICENSE.md) 파일을 참조하세요.
+-->
