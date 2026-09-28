@@ -347,7 +347,7 @@ option module = 10;    // Required: module ID must be defined
 
 ### 서버 전용 파일
 
-내보내기 도구는 서버 전용 proto 파일을 **파일명 접미사** `-s` 또는 `_s`(예: `player-s.proto`, `economy_s.proto`)로 식별합니다. 이들을 포함하려면 `--isServer true` 를 전달하고, 기본값 `--isServer false` 에서는 건너뛰므로 서버 전용 메시지가 클라이언트에 유출되지 않습니다.
+내보내기 도구는 서버 전용 proto 파일을 **파일명 접미사** `-s` 또는 `_s`(예: `player-s.proto`, `economy_s.proto`)로 식별합니다. 이들을 포함하려면 `--isServer` 를 전달하세요. 기본값(`--isServer` 생략)에서는 건너뛰므로 서버 전용 메시지가 클라이언트에 유출되지 않습니다. 주의: 불리언 파라미터는 플래그 방식으로 **지정하면 켜집니다** — `--isServer false` 도 서버 모드를 켭니다(`false` 리터럴은 무시됨). 끄려면 생략하세요.
 
 내부 프로토콜은 라우팅 분리를 위해 추가로 **음수 모듈 ID**를 가집니다(위 모듈 ID 표 참조).
 
@@ -444,6 +444,8 @@ docker run --rm \
 | `--usingStatements` | `""` | `\|` 로 구분된 using 문(예: `"using System\|using ProtoBuf"`) |
 | `--isGenerateDescription` | `false` | `[System.ComponentModel.Description]` 특성 생성 |
 | `--isServer` | `false` | 서버 전용 proto 파일 포함(파일명이 `-s` 또는 `_s` 로 끝남) |
+
+> 주의: 불리언 파라미터(`--isServer`, `--isGenerateDescription` 등)는 플래그 방식입니다: **지정하면 켜지며** `--xxx false` 로는 끌 수 없습니다(`false` 리터럴은 무시됨). 표의 "기본값"은 파라미터 생략 시의 값입니다.
 
 ### TypeScript
 

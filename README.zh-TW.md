@@ -347,7 +347,7 @@ option module = 10;    // 必填：必須定義模組 ID
 
 ### 僅伺服器檔案
 
-匯出工具透過**檔名後綴** `-s` 或 `_s`（如 `player-s.proto`、`economy_s.proto`）識別僅伺服器的 proto 檔案。傳入 `--isServer true` 才會包含它們；預設 `--isServer false` 時會跳過，因此僅伺服器訊息永遠不會洩露給客戶端。
+匯出工具透過**檔名後綴** `-s` 或 `_s`（如 `player-s.proto`、`economy_s.proto`）識別僅伺服器的 proto 檔案。傳入 `--isServer` 才會包含它們；預設（省略 `--isServer`）時會跳過，因此僅伺服器訊息永遠不會洩露給客戶端。注意：布林參數是開關語義，**出現即開啟**——`--isServer false` 同樣會開啟伺服器模式（`false` 字面值會被忽略），要關閉只能省略該參數。
 
 內部協議額外以**負模組 ID** 做路由隔離（見上方的模組 ID 表）。
 
@@ -444,6 +444,8 @@ docker run --rm \
 | `--usingStatements` | `""` | using 語句，以 `\|` 分隔（如 `"using System\|using ProtoBuf"`） |
 | `--isGenerateDescription` | `false` | 生成 `[System.ComponentModel.Description]` 特性 |
 | `--isServer` | `false` | 包含僅伺服器 proto 檔案（檔名以 `-s` 或 `_s` 結尾） |
+
+> 注：布林參數（`--isServer`、`--isGenerateDescription` 等）為開關語義：**出現即開啟**，`--xxx false` 無法將其關閉（`false` 字面值會被忽略）；表中「預設值」指省略該參數時的取值。
 
 ### TypeScript
 

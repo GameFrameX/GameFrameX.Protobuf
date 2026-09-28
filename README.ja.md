@@ -347,7 +347,7 @@ option module = 10;    // 必須: モジュール ID を定義すること
 
 ### サーバー専用ファイル
 
-エクスポートツールはサーバー専用 proto ファイルを**ファイル名の接尾辞** `-s` または `_s`（例: `player-s.proto`、`economy_s.proto`）で識別します。取り込むには `--isServer true` を渡してください。デフォルト `--isServer false` ではスキップされ、サーバー専用メッセージがクライアントに漏れることはありません。
+エクスポートツールはサーバー専用 proto ファイルを**ファイル名の接尾辞** `-s` または `_s`（例: `player-s.proto`、`economy_s.proto`）で識別します。取り込むには `--isServer` を渡してください。デフォルト（`--isServer` を省略）ではスキップされ、サーバー専用メッセージがクライアントに漏れることはありません。注意：ブール型パラメータはフラグ方式で、**指定すれば有効**になります——`--isServer false` でもサーバーモードが有効になります（`false` は無視されます）。無効化するには省略してください。
 
 内部プロトコルはさらにルーティング分離のために**負のモジュール ID** を持ちます（上記「モジュール ID」表を参照）。
 
@@ -444,6 +444,8 @@ docker run --rm \
 | `--usingStatements` | `""` | `\|` 区切りの using 文（例: `"using System\|using ProtoBuf"`） |
 | `--isGenerateDescription` | `false` | `[System.ComponentModel.Description]` 属性を生成 |
 | `--isServer` | `false` | サーバー専用 proto ファイルを取り込む（ファイル名が `-s` または `_s` で終わる） |
+
+> 注：ブール型パラメータ（`--isServer`、`--isGenerateDescription` など）はフラグ方式です：**指定すれば有効**になり、`--xxx false` では無効化できません（`false` は無視されます）。表の「デフォルト値」はパラメータ省略時の値です。
 
 ### TypeScript
 

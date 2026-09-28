@@ -347,7 +347,7 @@ option module = 10;    // Required: module ID must be defined
 
 ### Server-Only Files
 
-The export tool identifies server-only proto files by **filename suffix** `-s` or `_s` (e.g. `player-s.proto`, `economy_s.proto`). Pass `--isServer true` to include them; with the default `--isServer false` they are skipped, so server-only messages never leak to clients.
+The export tool identifies server-only proto files by **filename suffix** `-s` or `_s` (e.g. `player-s.proto`, `economy_s.proto`). Pass `--isServer` to include them; by default (omitting `--isServer`) they are skipped, so server-only messages never leak to clients. Note: boolean options are presence-based flags — **passing the flag turns it on**, so `--isServer false` also enables server mode (the `false` literal is ignored); the only way to turn one off is to omit it.
 
 Internal protocols additionally carry a **negative module ID** for routing separation (see the Module ID table above).
 
@@ -444,6 +444,8 @@ Path mapping: `-v <host>:<container>` mounts a host directory; `--inputPath` / `
 | `--usingStatements` | `""` | Using statements separated by `\|` (e.g. `"using System\|using ProtoBuf"`) |
 | `--isGenerateDescription` | `false` | Generate `[System.ComponentModel.Description]` attributes |
 | `--isServer` | `false` | Include server-only proto files (filename ends with `-s` or `_s`) |
+
+> Note: boolean options (`--isServer`, `--isGenerateDescription`, etc.) are presence-based flags: **passing the flag turns it on** — `--xxx false` cannot turn it off (the `false` literal is ignored). The "default" column is the value used when the option is omitted.
 
 ### TypeScript
 
