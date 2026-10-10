@@ -1,6 +1,5 @@
 syntax = "proto3";
 package RockPaperScissors;
-option module = 410;
 
 // 石头剪刀布出拳
 enum RockPaperScissorsGesture

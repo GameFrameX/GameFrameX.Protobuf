@@ -1,6 +1,5 @@
 syntax = "proto3";
 package Room;
-option module = 400;
 
 // 游戏类型
 enum GameType

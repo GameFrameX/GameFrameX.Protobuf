@@ -1,6 +1,5 @@
 syntax = "proto3";
 package InnerSocial;
-option module = -120;
 
 // 请求添加好友
 message ReqInnerFriendByAdd
