@@ -114,14 +114,13 @@ protobuf가 처음이신가요? 이 절은 단계별 튜토리얼입니다. 위�
 // 파일명: _0100_Bag.proto
 syntax = "proto3";      // 항상 proto3 —— 현행 protobuf 문법
 package Bag;            // 도메인명(PascalCase)
-option module = 100;    // 라우팅 번호. 파일명의 0100 과 일치해야 함
 ```
 
 한 줄씩 설명:
 
 - `syntax = "proto3";` —— 현행 protobuf 문법을 선언합니다. 모든 파일이 이 줄로 시작합니다.
 - `package Bag;` —— 이 파일의 도메인은 'Bag'. PascalCase는 첫 글자가 대문자임을 뜻합니다.
-- `option module = 100;` —— 라우팅 번호 100을 할당합니다.**파일명의 `0100` 과 완전히 일치해야 합니다.**
+- 모듈 ID —— **파일명 접두사로만** 결정됨(`_0100_` → 100). `option module`는 **작성 금지**: 2026-09-28 전 proto 파일에서 제거됨. 파일명과 option 이중 정의는 어긋남과 module mismatch 예외를 부른다.
 
 규칙:
 
@@ -251,7 +250,6 @@ enum MailErrorCode {
 ```protobuf
 syntax = "proto3";
 package Quest;
-option module = 600;
 
 // Quest business error codes (6 digits = module 600 + 3-digit ordinal)
 enum QuestErrorCode {
@@ -312,7 +310,6 @@ message NotifyQuestChanged {
 ```protobuf
 syntax = "proto3";     // Required: only proto3 is supported
 package Basic;
-option module = 10;    // Required: module ID must be defined
 ```
 
 ### 메시지 명명

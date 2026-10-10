@@ -114,14 +114,13 @@ Every business area lives in its own file named `_<ModuleID:0000>_<Domain>.proto
 // File: _0100_Bag.proto
 syntax = "proto3";      // always proto3 — the modern protobuf syntax
 package Bag;            // the domain name (PascalCase)
-option module = 100;    // the routing number; must match the 0100 in the filename
 ```
 
 Line by line:
 
 - `syntax = "proto3";` — declares the modern protobuf syntax. Every file starts with this line.
 - `package Bag;` — this file's domain is "Bag". PascalCase means the first letter is uppercase.
-- `option module = 100;` — assigns routing number 100. **It must equal the `0100` in the filename.**
+- Module ID — comes **only** from the filename prefix (`_0100_` → 100). Do **not** write `option module`: removed from all proto files (2026-09-28); defining it in both places invites drift and a module mismatch exception.
 
 Rules:
 
@@ -251,7 +250,6 @@ A hypothetical `_0600_Quest` (quest system) module exercising every rule above:
 ```protobuf
 syntax = "proto3";
 package Quest;
-option module = 600;
 
 // Quest business error codes (6 digits = module 600 + 3-digit ordinal)
 enum QuestErrorCode {
@@ -312,7 +310,6 @@ The hard rules the `ProtoExport` tool enforces. Authoritative source: [GameFrame
 ```protobuf
 syntax = "proto3";     // Required: only proto3 is supported
 package Basic;
-option module = 10;    // Required: module ID must be defined
 ```
 
 ### Message Naming

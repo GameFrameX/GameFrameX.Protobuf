@@ -114,14 +114,13 @@ protobuf 初心者ですか？この節はステップ・バイ・ステップ�
 // ファイル：_0100_Bag.proto
 syntax = "proto3";      // 常に proto3 —— 現行の protobuf 構文
 package Bag;            // ドメイン名（PascalCase）
-option module = 100;    // ルーティング番号。ファイル名の 0100 と一致必須
 ```
 
 行ごとの解説:
 
 - `syntax = "proto3";` —— 現行の protobuf 構文を宣言します。すべてのファイルはこの行で始まります。
 - `package Bag;` —— このファイルのドメインは「Bag」。PascalCase は先頭が大文字であることを意味します。
-- `option module = 100;` —— ルーティング番号 100 を割り当てます。**ファイル名の `0100` と完全に一致必須です。**
+- モジュール ID —— **ファイル名のプレフィックスのみ**で決まる（`_0100_` → 100）。`option module` は**書かない**：2026-09-28 に全 proto ファイルから削除済み。ファイル名と option の二重定義は齟齬と module mismatch 例外を招く。
 
 ルール:
 
@@ -251,7 +250,6 @@ enum MailErrorCode {
 ```protobuf
 syntax = "proto3";
 package Quest;
-option module = 600;
 
 // Quest business error codes (6 digits = module 600 + 3-digit ordinal)
 enum QuestErrorCode {
@@ -312,7 +310,6 @@ message NotifyQuestChanged {
 ```protobuf
 syntax = "proto3";     // 必須: proto3 のみサポート
 package Basic;
-option module = 10;    // 必須: モジュール ID を定義すること
 ```
 
 ### メッセージ命名

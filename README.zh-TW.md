@@ -114,14 +114,13 @@ docker run --rm \
 // 檔名：_0100_Bag.proto
 syntax = "proto3";      // 永遠用 proto3 —— 當前的 protobuf 語法
 package Bag;            // 業務域名（PascalCase）
-option module = 100;    // 路由號；必須和檔名裡的 0100 對上
 ```
 
 逐行解讀：
 
 - `syntax = "proto3";` —— 宣告使用當前的 protobuf 語法。每個檔案都以此開頭。
 - `package Bag;` —— 這個檔案的業務域是「Bag」。PascalCase 指首字母大寫。
-- `option module = 100;` —— 分配路由號 100。**它必須和檔名裡的 `0100` 完全一致。**
+- 模組 ID —— **只**由檔名前綴決定（`_0100_` → 100）。**不要寫** `option module`：已從全部協議檔案移除（2026-09-28）；檔名與 option 雙份定義會漂移並拋 module mismatch 異常。
 
 規則：
 
@@ -251,7 +250,6 @@ enum MailErrorCode {
 ```protobuf
 syntax = "proto3";
 package Quest;
-option module = 600;
 
 // Quest business error codes (6 digits = module 600 + 3-digit ordinal)
 enum QuestErrorCode {
@@ -312,7 +310,6 @@ message NotifyQuestChanged {
 ```protobuf
 syntax = "proto3";     // 必填：僅支援 proto3
 package Basic;
-option module = 10;    // 必填：必須定義模組 ID
 ```
 
 ### 訊息命名
