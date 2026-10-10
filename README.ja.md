@@ -372,7 +372,7 @@ docker run --rm \
   -v ./Server/GameFrameX.Proto/Proto:/output \
   gameframex/gameframex-tools:latest \
   --mode csharp --isServer true \
-  --usingStatements "using System|using ProtoBuf|using System.Collections.Generic|using GameFrameX.NetWork.Abstractions|using GameFrameX.NetWork.Messages" \
+  --usingStatements "using System|using ProtoBuf|using System.Collections.Generic|using GameFrameX.Network.Abstractions|using GameFrameX.Network.Messages" \
   --isGenerateDescription true \
   --inputPath /protos --outputPath /output --namespaceName GameFrameX.Proto.Proto
 ```
