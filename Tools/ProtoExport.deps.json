@@ -26,12 +26,14 @@
         "runtime": {
           "lib/net10.0/GameFrameX.Foundation.Localization.dll": {
             "assemblyVersion": "4.0.2.0",
-            "fileVersion": "4.0.2.0"
+            "fileVersion": "4.0.2.0",
+            "localPath": "GameFrameX.Foundation.Localization.dll"
           }
         },
         "resources": {
           "lib/net10.0/zh-CN/GameFrameX.Foundation.Localization.resources.dll": {
-            "locale": "zh-CN"
+            "locale": "zh-CN",
+            "localPath": "zh-CN/GameFrameX.Foundation.Localization.resources.dll"
           }
         }
       },
@@ -42,12 +44,14 @@
         "runtime": {
           "lib/net10.0/GameFrameX.Foundation.Options.dll": {
             "assemblyVersion": "4.0.2.0",
-            "fileVersion": "4.0.2.0"
+            "fileVersion": "4.0.2.0",
+            "localPath": "GameFrameX.Foundation.Options.dll"
           }
         },
         "resources": {
           "lib/net10.0/zh-CN/GameFrameX.Foundation.Options.resources.dll": {
-            "locale": "zh-CN"
+            "locale": "zh-CN",
+            "localPath": "zh-CN/GameFrameX.Foundation.Options.resources.dll"
           }
         }
       },
@@ -55,7 +59,8 @@
         "runtime": {
           "lib/net10.0/Microsoft.Extensions.Localization.Abstractions.dll": {
             "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.0.1126.37416"
+            "fileVersion": "10.0.1126.37416",
+            "localPath": "Microsoft.Extensions.Localization.Abstractions.dll"
           }
         }
       }
