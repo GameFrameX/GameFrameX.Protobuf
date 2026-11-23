@@ -7,6 +7,7 @@ enum GameType
   None = 0; // 未知
   RockPaperScissors = 1; // 石头剪刀布
   ConnectFour = 2; // 四子棋
+  DiceBattle = 3; // 掷骰子比大小
 }
 
 // 通用房间状态
