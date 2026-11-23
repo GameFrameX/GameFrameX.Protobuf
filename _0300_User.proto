@@ -70,6 +70,7 @@ message RespPlayerLogin
   int32 Code = 1; // 返回码（ResultCode）
   int64 CreateTime = 2; // 创建时间
   PlayerInfo PlayerInfo = 3; // 角色信息
+  string SessionToken = 4; // 会话恢复凭据（断线后凭此值经 ReqSessionResume 恢复身份；Online 未装配时为空）
 }
 
 // 客户端每次请求都会回复错误码
