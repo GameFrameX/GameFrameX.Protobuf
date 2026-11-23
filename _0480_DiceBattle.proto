@@ -1,0 +1,62 @@
+syntax = "proto3";
+package DiceBattle;
+
+// 掷骰子比大小玩家信息
+message DiceBattlePlayerInfo
+{
+  int64 PlayerId = 1; // 玩家ID
+  bool HasRolled = 2; // 是否已掷骰
+  int32 DiceValue = 3; // 骰子点数(1-6)。未结算前对外为0，结算后显示真实点数。
+}
+
+// 掷骰子比大小游戏信息
+message DiceBattleGameInfo
+{
+  int64 RoomId = 1; // 房间ID
+  int32 Round = 2; // 当前局数
+  repeated int64 WinnerPlayerIds = 3; // 胜利玩家ID列表。点数最大者获胜，并列时全部返回；未结算前为空。
+  int32 MaxDiceValue = 4; // 最大骰子点数。未结算前为0。
+  repeated DiceBattlePlayerInfo Players = 5; // 玩家列表
+}
+
+// 请求掷骰子比大小游戏信息
+message ReqDiceBattleGameInfo
+{
+  int64 RoomId = 1; // 房间ID
+}
+
+// 返回掷骰子比大小游戏信息
+message RespDiceBattleGameInfo
+{
+  DiceBattleGameInfo GameInfo = 1; // 游戏信息
+}
+
+// 请求掷骰子（服务器端生成点数）
+message ReqRollDiceBattle
+{
+  int64 RoomId = 1; // 房间ID
+}
+
+// 返回掷骰子
+message RespRollDiceBattle
+{
+  DiceBattleGameInfo GameInfo = 1; // 游戏信息
+}
+
+// 请求掷骰子比大小再来一局
+message ReqRestartDiceBattle
+{
+  int64 RoomId = 1; // 房间ID
+}
+
+// 返回掷骰子比大小再来一局
+message RespRestartDiceBattle
+{
+  DiceBattleGameInfo GameInfo = 1; // 游戏信息
+}
+
+// 通知掷骰子比大小游戏变化
+message NotifyDiceBattleGameChanged
+{
+  DiceBattleGameInfo GameInfo = 1; // 游戏信息
+}
